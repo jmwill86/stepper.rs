@@ -11,3 +11,4 @@ Cargo.lock
 
 # General filetypes
 */.DS_Store
+**/*.swp

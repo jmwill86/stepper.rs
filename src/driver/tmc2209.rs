@@ -1,41 +1,39 @@
-use crate::connection::uart;
+use crate::connection::uart::UART;
+//use crate::connection::Connection;
+use crate::connection::ConnectionTrait;
+use crate::stepper::Stepper;
 
 const WRITE_FLAG: u8 = 0x00;
 const READ_FLAG: u8 = 0x01;
 
-struct StepperConfig {
-    connection_type: connection, // todo, this should probably be forced to use connection type interface in some way
+pub struct Tmc2209 {
+    connection: UART,
 }
 
-pub fn new(dir_pin: u8, step_pin: u8, en_pin: u8) -> StepperConfig {
-    println!("Creating new TMC instance");
-    StepperConfig {}
+impl Tmc2209 {
+    pub fn clear_gstat(self) -> i32 {
+        println!("yay!");
+        12
+    }
 }
 
-/// This is the setting used to decide where to send the binary commands
-fn get_connection_type() {}
+impl Stepper for Tmc2209 {
+    fn new(_pin: u32, _en: u32, _dir: u32) -> Self {
+        Self {
+            connection: UART::new(),
+        }
+    }
 
-fn get_drv_status() {
-    self.connection_type.read();
+    fn move_to_position(&self, position: i32) -> i32 {
+        let some_vec: Vec<u8> = self.connection.send();
+        2i32
+    }
 }
-
-fn get_gconf() {}
-
-fn get_gstat() {}
-
-fn cleat_gstat() {}
-
-fn set_step_direction() {}
-
-fn get_step_direction() {}
-
-fn step() {}
 
 #[cfg(test)]
 mod tests {
     #[test]
     fn it_works() {
         todo!();
-        //assert_eq!(2 + 2, 4);
     }
 }
