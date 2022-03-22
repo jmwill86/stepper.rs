@@ -1,35 +1,48 @@
+use std::thread;
 use stepper_rs::driver::tmc2209::Tmc2209;
 use stepper_rs::stepper::Stepper;
 
 fn main() {
     println!("Running main...");
 
-    //uart::connect();
-    //let tmc2209 = tmc2209::new2();
-    let motor_1 = Tmc2209::new(1, 2, 3);
-    motor_1.clear_gstat();
-    //motor_1::clear_gstat();
+    let stepper = Tmc2209::new(16, 20, 21); // step, dir, en
 
-    //tmc = TMC_2209(16, 20, 21) # use your pins for pin_step, pin_dir, pin_en here
+    let start: u8 = 0xFF;
+    //let changer: u8 = 1 << 0;
+    let changer: u8 = 128 >> 5;
+    let end: u8 = start & !(changer);
+    //value & ~(bit)
+    println!("{:b}", start);
+    println!("{:b}", changer);
+    println!("{:b}", end);
 
-    //tmc.setMovementAbsRel(MovementAbsRel.absolute)
-    //tmc.setDirection_reg(False)
-    //tmc.setVSense(True)
-    //tmc.setCurrent(300)
-    //tmc.setIScaleAnalog(True)
-    //tmc.setInterpolation(True)
-    //tmc.setSpreadCycle(False)
-    //tmc.setMicrosteppingResolution(2)
-    //tmc.setInternalRSense(False)
+    stepper.read_gstat();
+    stepper.set_movement_rel();
+    stepper.set_direction(); // impl
+    stepper.set_vsense();
+    stepper.set_current();
 
-    ////tmc.readIOIN()
-    ////tmc.readCHOPCONF()
-    ////tmc.readDRVSTATUS()
-    ////tmc.readGCONF()
+    stepper.set_iscale_analog(true);
+    stepper.set_interpolation(true);
+    stepper.set_spreadcycle(false);
+    stepper.set_microstepping_resolution(2);
+    stepper.set_internal_rsense(false);
 
-    //tmc.setAcceleration(2000)
-    //tmc.setMaxSpeed(500)
+    stepper.read_ioin();
+    stepper.read_chopconf();
+    stepper.read_drv_status();
+    stepper.read_gconf();
 
-    //tmc.setMotorEnabled(True)
-    //tmc.runToPositionSteps(400)
+    stepper.set_acceleration(2000);
+    stepper.set_max_speed(500);
+    stepper.set_motor_enabled(true);
+
+    for i in 0..5 {
+        stepper.move_to_position(400);
+        stepper.move_to_position(0);
+        println!("Loop...{}", i);
+        thread::sleep_ms(2000);
+    }
+
+    println!("Complete!");
 }

@@ -13,5 +13,6 @@ impl ConnectionTrait for UART {
         //avec
         vec![0; 4]
     }
+
     //fn receive() {}
 }
