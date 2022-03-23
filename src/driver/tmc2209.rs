@@ -139,7 +139,7 @@ impl Tmc2209 {
 
     /// Get the full Vec for a read in correct format: [sync, address, register, crc]
     /// [8,8,8,8]
-    fn get_read_bytes(&self, reg: u8, modifier: u32) -> Vec<u8> {
+    fn get_read_bytes(&self, reg: u8) -> Vec<u8> {
         // 8,8,8,8
         let mut read_frame = vec![0xFF; 4]; // could this be using with_capacity?
         read_frame[0] = 0x55;
@@ -228,7 +228,7 @@ mod tests {
     fn crc_parity_test_write() {
         let the_tmc = Tmc2209::new(1, 2, 3);
         assert_eq!(
-            the_tmc.calculate_crc(&mut vec![85, 15, 0, 0, 13, 0, 0]),
+            the_tmc.calculate_crc(&mut vec![85, 15, 0, 0, 13, 0, 0, 0]),
             173
         )
     }
@@ -237,8 +237,11 @@ mod tests {
     fn test_gstat() {
         let the_tmc = Tmc2209::new(1, 2, 3);
         assert_eq!(
-            the_tmc.get_read_bytes(Tmc2209::GCONF as u8, Tmc2209::EN_SPREADCYCLE as u32),
-            vec![0x01, 0x01, 0x01, 0x01]
+            the_tmc.get_read_bytes(Tmc2209::set_bit(
+                Tmc2209::GCONF as u8,
+                Tmc2209::EN_SPREADCYCLE as u8
+            )),
+            vec![0x55, 0x00, 0x04, 47]
         )
     }
 
