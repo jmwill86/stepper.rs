@@ -89,18 +89,40 @@ impl Tmc2209 {
     }
 
     /// Calculates CRC parity bit
-    fn calculate_crc(&self, datagram: Vec<u8>) -> u8 {
-        // get all but the last of the vec
-        0xFF
+    fn calculate_crc(&self, datagram: &mut Vec<u8>) -> u8 {
+        let mut counter = datagram.len() - 1;
+        let mut crc: u8 = 0;
+
+        for byte in datagram.iter() {
+            let mut new_byte = *byte;
+            counter -= 1;
+
+            for _ in 0..8 {
+                if (crc >> 7) ^ (new_byte & 0x01) > 0 {
+                    crc = ((crc << 1) ^ 0x07) & 0xFF;
+                } else {
+                    crc = (crc << 1) & 0xFF;
+                }
+                new_byte = new_byte >> 1; // This would change the inner byte, right? But I want to keep this for use in the calling function
+            }
+
+            if counter <= 0 {
+                break;
+            }
+        }
+        crc
     }
 
     /// Sets a speicific bit to 1
-    fn set_bit<T>(register_bits: T, setting_bits: T) -> T {
+    fn set_bit<T: std::ops::BitOr<Output = T>>(register_bits: T, setting_bits: T) -> T {
         register_bits | (setting_bits)
     }
 
     /// Sets a specific bit to 0
-    fn clear_bit<T>(register_bits: T, setting_bits: T) -> T {
+    fn clear_bit<T: std::ops::Not<Output = T> + std::ops::BitAnd<Output = T>>(
+        register_bits: T,
+        setting_bits: T,
+    ) -> T {
         register_bits & !(setting_bits)
     }
 
@@ -123,7 +145,7 @@ impl Tmc2209 {
         read_frame[0] = 0x55;
         read_frame[1] = 0x00;
         read_frame[2] = reg;
-        read_frame[3] = self.calculate_crc(read_frame);
+        read_frame[3] = self.calculate_crc(&mut read_frame);
         read_frame
     }
 }
@@ -199,13 +221,16 @@ mod tests {
     #[test]
     fn crc_parity_test_read() {
         let the_tmc = Tmc2209::new(1, 2, 3);
-        assert_eq!(the_tmc.calculate_crc(vec![0x55, 0, 0, 0]), 207)
+        assert_eq!(the_tmc.calculate_crc(&mut vec![0x55, 0, 0, 0]), 207)
     }
 
     #[test]
     fn crc_parity_test_write() {
         let the_tmc = Tmc2209::new(1, 2, 3);
-        assert_eq!(the_tmc.calculate_crc(vec![85, 15, 0, 0, 13, 0, 0]), 173)
+        assert_eq!(
+            the_tmc.calculate_crc(&mut vec![85, 15, 0, 0, 13, 0, 0]),
+            173
+        )
     }
 
     #[test]
@@ -213,7 +238,7 @@ mod tests {
         let the_tmc = Tmc2209::new(1, 2, 3);
         assert_eq!(
             the_tmc.get_read_bytes(Tmc2209::GCONF as u8, Tmc2209::EN_SPREADCYCLE as u32),
-            vec![0x01; 4]
+            vec![0x01, 0x01, 0x01, 0x01]
         )
     }
 

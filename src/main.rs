@@ -7,35 +7,35 @@ fn main() {
 
     let stepper = Tmc2209::new(16, 20, 21); // step, dir, en
 
-    let start: u8 = 0xFF;
+    let start: u32 = 0xFF;
     //let changer: u8 = 1 << 0;
-    let changer: u8 = 128 >> 5;
-    let end: u8 = start & !(changer);
-    //value & ~(bit)
+    let changer: u32 = 128 >> 5;
+    //let end: u8 = start & !(changer);
+    let end: u32 = start | (changer);
     println!("{:b}", start);
     println!("{:b}", changer);
     println!("{:b}", end);
 
-    stepper.read_gstat();
-    stepper.set_movement_rel();
-    stepper.set_direction(); // impl
-    stepper.set_vsense();
-    stepper.set_current();
+    //stepper.read_gstat();
+    //stepper.set_movement_rel();
+    //stepper.set_direction(); // impl
+    //stepper.set_vsense();
+    //stepper.set_current();
 
-    stepper.set_iscale_analog(true);
-    stepper.set_interpolation(true);
-    stepper.set_spreadcycle(false);
-    stepper.set_microstepping_resolution(2);
-    stepper.set_internal_rsense(false);
+    //stepper.set_iscale_analog(true);
+    //stepper.set_interpolation(true);
+    //stepper.set_spreadcycle(false);
+    //stepper.set_microstepping_resolution(2);
+    //stepper.set_internal_rsense(false);
 
-    stepper.read_ioin();
-    stepper.read_chopconf();
-    stepper.read_drv_status();
-    stepper.read_gconf();
+    //stepper.read_ioin();
+    //stepper.read_chopconf();
+    //stepper.read_drv_status();
+    //stepper.read_gconf();
 
-    stepper.set_acceleration(2000);
-    stepper.set_max_speed(500);
-    stepper.set_motor_enabled(true);
+    //stepper.set_acceleration(2000);
+    //stepper.set_max_speed(500);
+    //stepper.set_motor_enabled(true);
 
     for i in 0..5 {
         stepper.move_to_position(400);
