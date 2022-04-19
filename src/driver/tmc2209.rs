@@ -1,20 +1,59 @@
-use crate::connection::uart::UART;
-use crate::connection::ConnectionTrait;
-use crate::stepper::Stepper;
+use crate::stepper::ConnectionType;
+use gpio_cdev::Chip;
 
-//const WRITE_FLAG: u8 = 0x00;
-//const READ_FLAG: u8 = 0x01;
-
-pub struct Tmc2209 {
-    connection: UART,
+pub struct Tmc2209Builder {
+    pins: (u8, u8, u8),
+    chip: Chip,
+    connection: ConnectionType,
     crc_parity: u8,
-    //write_frame: Vec<u8>,
-    //read_frame: Vec<u8>,
 }
 
+impl Tmc2209Builder {
+    pub fn set_connection(mut self, connection: ConnectionType) -> Self {
+        self.connection = connection;
+        self
+    }
+
+    pub fn build(self) -> Tmc2209 {
+        Tmc2209 {
+            pins: self.pins,
+            chip: self.chip,
+            connection: self.connection,
+            crc_parity: self.crc_parity,
+        }
+    }
+}
+
+pub struct Tmc2209 {
+    pins: (u8, u8, u8),
+    chip: Chip,
+    connection: ConnectionType,
+    crc_parity: u8,
+}
+
+//impl Stepper for Tmc2209 {
+// For future trait implementation
+//}
+
 impl Tmc2209 {
+    pub fn new(pins: (u8, u8, u8)) -> Tmc2209Builder {
+        Tmc2209Builder {
+            pins,
+            chip: Chip::new("/dev/gpiochip0").expect("Chip not found"),
+            connection: ConnectionType::UART, //crc_parity: 8,
+            crc_parity: 0,
+        }
+    }
+
+    pub fn get_connection(&self) -> &ConnectionType {
+        &self.connection
+    }
+
     //const read_frame :Vec<u8> = jk
     // write_frame
+
+    //const WRITE_FLAG: u8 = 0x00;
+    //const READ_FLAG: u8 = 0x01;
 
     //// Addresses
     const GCONF: u8 = 0x00;
@@ -150,22 +189,6 @@ impl Tmc2209 {
     }
 }
 
-impl Stepper for Tmc2209 {
-    fn new(_pin: u32, _en: u32, _dir: u32) -> Self {
-        Self {
-            connection: UART::new(),
-            crc_parity: 0,
-        }
-    }
-
-    fn move_to_position(&self, position: i32) -> i32 {
-        let some_vec: Vec<u8> = self.connection.send();
-        2i32
-    }
-
-    fn step(&self) {}
-    fn set_direction(&self) {}
-}
 #[cfg(test)]
 mod tests {
     use super::*;
