@@ -1,6 +1,7 @@
 use stepper_rs::driver::tmc2209::Tmc2209;
 use stepper_rs::stepper::ConnectionType;
 use stepper_rs::stepper::Stepper;
+use stepper_rs::stepper::StepperBuilder;
 
 fn main() {
     println!("Running main...");

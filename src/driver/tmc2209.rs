@@ -1,27 +1,37 @@
 use crate::stepper::ConnectionType;
+use crate::stepper::{Stepper, StepperBuilder};
 use gpio_cdev::Chip;
 
 pub struct Tmc2209Builder {
     pins: (u8, u8, u8),
     chip: Chip,
     connection: ConnectionType,
-    crc_parity: u8,
 }
 
-impl Tmc2209Builder {
-    pub fn set_connection(mut self, connection: ConnectionType) -> Self {
+impl StepperBuilder for Tmc2209Builder {
+    type Builder = Tmc2209Builder;
+    type Stepper = Tmc2209;
+
+    fn set_connection(mut self, connection: ConnectionType) -> Self::Builder {
         self.connection = connection;
         self
     }
 
-    pub fn build(self) -> Tmc2209 {
+    fn build(self) -> Self::Stepper {
         Tmc2209 {
             pins: self.pins,
             chip: self.chip,
             connection: self.connection,
-            crc_parity: self.crc_parity,
+            crc_parity: 0,
         }
     }
+}
+
+impl Tmc2209Builder {
+    //pub fn set_connection(mut self, connection: ConnectionType) -> Self {
+    //self.connection = connection;
+    //self
+    //}
 }
 
 pub struct Tmc2209 {
@@ -31,19 +41,27 @@ pub struct Tmc2209 {
     crc_parity: u8,
 }
 
-//impl Stepper for Tmc2209 {
-// For future trait implementation
-//}
+impl Stepper for Tmc2209 {
+    type Builder = Tmc2209Builder;
 
-impl Tmc2209 {
-    pub fn new(pins: (u8, u8, u8)) -> Tmc2209Builder {
-        Tmc2209Builder {
+    fn new(pins: (u8, u8, u8)) -> Self::Builder {
+        Self::Builder {
             pins,
             chip: Chip::new("/dev/gpiochip0").expect("Chip not found"),
             connection: ConnectionType::UART, //crc_parity: 8,
-            crc_parity: 0,
         }
     }
+}
+
+impl Tmc2209 {
+    //pub fn new(pins: (u8, u8, u8)) -> Tmc2209Builder {
+    //Tmc2209Builder {
+    //pins,
+    //chip: Chip::new("/dev/gpiochip0").expect("Chip not found"),
+    //connection: ConnectionType::UART, //crc_parity: 8,
+    //crc_parity: 0,
+    //}
+    //}
 
     pub fn get_connection(&self) -> &ConnectionType {
         &self.connection
