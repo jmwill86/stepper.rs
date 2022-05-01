@@ -1,26 +1,29 @@
+use crate::connection::ConnectionType;
 use gpio_cdev::Chip;
 
-#[derive(Copy, Clone, Debug)]
-pub enum ConnectionType {
-    UART,
-    SPI,
+/// Direction of the stepper CW = Clockwise / CCW = Counter clockwise
+pub enum Direction {
+    CW,
+    CCW,
 }
 
+/// Builder trait for any steppers to ensure no matter what type of stepper is being used that we
+/// always have the correct interface
 pub trait StepperBuilder {
     type Builder: StepperBuilder;
     type Stepper;
 
     fn build(self) -> Self::Stepper;
     fn set_connection(self, connection: ConnectionType) -> Self::Builder;
+    fn set_chip(self, chip: Option<Chip>) -> Self::Builder;
 }
 
 pub trait Stepper {
     type Builder: StepperBuilder;
 
     fn new(pins: (u8, u8, u8)) -> Self::Builder;
-    //fn move_to_position(&self, position: i32) -> i32;
-    //fn step(&self);
-    //fn set_direction(&self);
-    //fn run();
-    //fn move_to_position();
+    fn move_to_position(&self, position: i32);
+    fn step(&self);
+    fn set_direction(&self, direction: Direction);
+    fn run(&self);
 }

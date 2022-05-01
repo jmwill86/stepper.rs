@@ -1,11 +1,11 @@
-use crate::stepper::ConnectionType;
-use crate::stepper::{Stepper, StepperBuilder};
+use crate::connection::{Connection, ConnectionType};
+use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::Chip;
 
 pub struct Tmc2209Builder {
-    pins: (u8, u8, u8),
-    chip: Chip,
-    connection: ConnectionType,
+    pins: (u8, u8, u8), // step, dir, en
+    chip: Option<Chip>,
+    connection: Connection,
 }
 
 impl StepperBuilder for Tmc2209Builder {
@@ -13,17 +13,27 @@ impl StepperBuilder for Tmc2209Builder {
     type Stepper = Tmc2209;
 
     fn set_connection(mut self, connection: ConnectionType) -> Self::Builder {
-        self.connection = connection;
+        self.connection = Connection::new(connection);
+        self
+    }
+
+    /// Should be supplied with Chip::new().ok() to transform the Chip result to Option
+    fn set_chip(mut self, chip: Option<Chip>) -> Self::Builder {
+        self.chip = chip;
         self
     }
 
     fn build(self) -> Self::Stepper {
-        Tmc2209 {
+        let mut stepper = Tmc2209 {
             pins: self.pins,
-            chip: self.chip,
+            chip: self.chip.expect("Chip was not found in build process"),
             connection: self.connection,
             crc_parity: 0,
-        }
+            msres: 256, //?
+            current_position: 0,
+        };
+        stepper.init();
+        stepper
     }
 }
 
@@ -35,10 +45,12 @@ impl Tmc2209Builder {
 }
 
 pub struct Tmc2209 {
-    pins: (u8, u8, u8),
+    pins: (u8, u8, u8), // step, dir, en
     chip: Chip,
-    connection: ConnectionType,
+    connection: Connection,
     crc_parity: u8,
+    current_position: u16,
+    msres: u16,
 }
 
 impl Stepper for Tmc2209 {
@@ -47,26 +59,48 @@ impl Stepper for Tmc2209 {
     fn new(pins: (u8, u8, u8)) -> Self::Builder {
         Self::Builder {
             pins,
-            chip: Chip::new("/dev/gpiochip0").expect("Chip not found"),
-            connection: ConnectionType::UART, //crc_parity: 8,
+            chip: Chip::new("/dev/gpiochip0").ok(),
+            connection: Connection::new(ConnectionType::UART),
         }
+
+        //match Chip::new("/dev/gpiochip0") {
+        //Ok(chip) => Self::Builder {
+        //pins,
+        //chip,
+        //connection: Connection::new(ConnectionType::UART),
+        //},
+        //Err(_) => {
+        //let iterator = gpio_cdev::chips().expect("No chips found");
+        //let mut counter = 0;
+        //for chip1 in iterator {
+        //counter = counter + 1;
+        //println!(
+        //"{}",
+        //chip1
+        //.expect("Chips iter not found")
+        //.path()
+        //.to_str()
+        //.unwrap()
+        //);
+        //}
+        //panic!(
+        //"Loading Chip failed. There are {} chips available.",
+        //counter
+        //);
+        //}
+        //}
     }
+
+    fn move_to_position(&self, position: i32) {}
+
+    fn step(&self) {}
+
+    fn set_direction(&self, direction: Direction) {}
+
+    fn run(&self) {}
 }
 
 impl Tmc2209 {
-    //pub fn new(pins: (u8, u8, u8)) -> Tmc2209Builder {
-    //Tmc2209Builder {
-    //pins,
-    //chip: Chip::new("/dev/gpiochip0").expect("Chip not found"),
-    //connection: ConnectionType::UART, //crc_parity: 8,
-    //crc_parity: 0,
-    //}
-    //}
-
-    pub fn get_connection(&self) -> &ConnectionType {
-        &self.connection
-    }
-
     //const read_frame :Vec<u8> = jk
     // write_frame
 
@@ -85,7 +119,7 @@ impl Tmc2209 {
     //const SGTHRS: u8 = 0x40;
     //const SG_RESULT: u8 = 0x41;
     //const MSCNT: u8 = 0x6A;
-    //const CHOPCONF: u8 = 0x6C;
+    const CHOPCONF: u8 = 0x6C;
     //const DRVSTATUS: u8 = 0x6F;
 
     //// GCONF
@@ -104,10 +138,10 @@ impl Tmc2209 {
 
     //// CHOPCONF
     //const VSENSE: u32 = 1 << 17;
-    //const MSRES0: u32 = 1 << 24;
-    //const MSRES1: u32 = 1 << 25;
-    //const MSRES2: u32 = 1 << 26;
-    //const MSRES3: u32 = 1 << 27;
+    const MSRES0: u32 = 1 << 24;
+    const MSRES1: u32 = 1 << 25;
+    const MSRES2: u32 = 1 << 26;
+    const MSRES3: u32 = 1 << 27;
     //const INTPOL: u32 = 1 << 28;
 
     //// IOIN
@@ -141,7 +175,45 @@ impl Tmc2209 {
     //// SGTHRS
     //const SGTHRS_MOD: u8 = 255 << 0;
 
-    fn read_gstat() {
+    pub fn get_connection(&self) -> &Connection {
+        &self.connection
+    }
+
+    fn init(&mut self) {
+        println!("init!");
+
+        //self.tmc_uart = TMC_UART(serialport, baudrate)
+
+        // get all pins to default out GPIO.setup(self._pin_step, GPIO.OUT) (set them to output)
+        // data)
+
+        // self.readStepsPerRevolution()  read from CHOPCONF and getMicroSteppingResolution to set
+        // the stepping resolution
+        self.read_steps_per_revolution();
+
+        //self.clearGSTAT()
+        self.clear_gstat();
+
+        //self.tmc_uart.flushSerialBuffer()
+    }
+
+    fn clear_gstat(&self) {}
+    fn read_steps_per_revolution(&mut self) -> u16 {
+        //chopconf = self.tmc_uart.read_int(self.CHOPCONF)
+        let chopconf = self.connection.read(self.get_read_bytes(Self::CHOPCONF));
+        self.get_steps_per_rev(1u32)
+    }
+
+    fn get_steps_per_rev(&mut self, chopconf: u32) -> u16 {
+        let mut msresdezimal =
+            chopconf & (Self::MSRES0 | Self::MSRES1 | Self::MSRES2 | Self::MSRES3);
+        msresdezimal = msresdezimal >> 24;
+        msresdezimal = 8 - msresdezimal;
+        self.msres = msresdezimal.pow(2) as u16;
+        self.msres
+    }
+
+    fn read_gstat(&self) {
         //
     }
 
@@ -211,6 +283,17 @@ impl Tmc2209 {
 mod tests {
     use super::*;
 
+    fn get_mock_tmc() -> Tmc2209 {
+        Tmc2209 {
+            pins: (1, 1, 1), // step, dir, en
+            chip: Chip::new("testpath").unwrap(),
+            connection: Connection::new(ConnectionType::UART),
+            crc_parity: 0,
+            current_position: 0,
+            msres: 0,
+        }
+    }
+
     #[test]
     fn set_bit_u8() {
         let pre_bits: u8 = 0xB4;
@@ -261,13 +344,13 @@ mod tests {
 
     #[test]
     fn crc_parity_test_read() {
-        let the_tmc = Tmc2209::new(1, 2, 3);
+        let the_tmc = get_mock_tmc();
         assert_eq!(the_tmc.calculate_crc(&mut vec![0x55, 0, 0, 0]), 207)
     }
 
     #[test]
     fn crc_parity_test_write() {
-        let the_tmc = Tmc2209::new(1, 2, 3);
+        let the_tmc = get_mock_tmc();
         assert_eq!(
             the_tmc.calculate_crc(&mut vec![85, 15, 0, 0, 13, 0, 0, 0]),
             173
@@ -276,7 +359,7 @@ mod tests {
 
     #[test]
     fn test_gstat() {
-        let the_tmc = Tmc2209::new(1, 2, 3);
+        let the_tmc = get_mock_tmc();
         assert_eq!(
             the_tmc.get_read_bytes(Tmc2209::set_bit(
                 Tmc2209::GCONF as u8,
@@ -294,5 +377,25 @@ mod tests {
         //the_tmc.get_read_bytes(Tmc2209::GCONF as u32, Tmc2209::EN_SPREADCYCLE as u32),
         //vec![0x01; 4]
         //)
+    }
+
+    #[test]
+    fn get_steps_per_rev() {
+        let mut the_tmc = get_mock_tmc();
+
+        assert_eq!(
+            the_tmc.get_steps_per_rev(0b0101_0101_0101_0101_0101_0101_0101_0101),
+            0b1000
+        )
+    }
+
+    #[test]
+    fn get_steps_per_rev2() {
+        let mut the_tmc = get_mock_tmc();
+
+        assert_eq!(
+            the_tmc.get_steps_per_rev(0b0000_0000_0000_0000_0000_0000_0000_0000),
+            0b100000000
+        )
     }
 }

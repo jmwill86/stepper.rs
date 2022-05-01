@@ -1,17 +1,47 @@
+use stepper_rs::connection::ConnectionType;
 use stepper_rs::driver::tmc2209::Tmc2209;
-use stepper_rs::stepper::ConnectionType;
 use stepper_rs::stepper::Stepper;
 use stepper_rs::stepper::StepperBuilder;
 
 fn main() {
     println!("Running main...");
 
-    let stepper = Tmc2209::new((16, 20, 21))
+    let tmc = Tmc2209::new((16, 20, 21))
         .set_connection(ConnectionType::UART)
         .build(); // step, dir, en
 
-    println!("{:?}", stepper.get_connection());
-    panic!("end");
+    //let tmc = Tmc2209 { pin: (1, 1, 1) };
+
+    //tmc.setLoglevel(Loglevel.debug)
+    //tmc.setMovementAbsRel(MovementAbsRel.absolute)
+
+    //// Register changing settings
+    //tmc.setDirection_reg(False)
+    //tmc.setVSense(True)
+    //tmc.setCurrent(300)
+    //tmc.setIScaleAnalog(True)
+    //tmc.setInterpolation(True)
+    //tmc.setSpreadCycle(False)
+    //tmc.setMicrosteppingResolution(2)
+    //tmc.setInternalRSense(False)
+
+    //// Read details
+    //tmc.readIOIN()
+    //tmc.readCHOPCONF()
+    //tmc.readDRVSTATUS()
+    //tmc.readGCONF()
+
+    //tmc.setAcceleration(2000)
+    //tmc.setMaxSpeed(500)
+    //tmc.setMotorEnabled(True)
+
+    //// actaully move the motor
+    //tmc.runToPositionSteps(400)
+
+    //println!("{:?}", stepper.get_connection());
+    //panic!("end");
+
+    //-----------------------------------------
 
     //let start: u32 = 0xFF;
     ////let changer: u8 = 1 << 0;
@@ -22,7 +52,7 @@ fn main() {
     //println!("{:b}", changer);
     //println!("{:b}", end);
 
-    ////stepper.read_gstat();
+    //tmc.read_gstat();
     ////stepper.set_movement_rel();
     ////stepper.set_direction(); // impl
     ////stepper.set_vsense();
