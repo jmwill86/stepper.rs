@@ -1,6 +1,6 @@
 use crate::connection::{Connection, ConnectionType};
 use crate::stepper::{Direction, Stepper, StepperBuilder};
-use gpio_cdev::Chip;
+use gpio_cdev::{Chip, LineRequestFlags};
 
 pub struct Tmc2209Builder {
     pins: (u8, u8, u8), // step, dir, en
@@ -185,12 +185,33 @@ impl Tmc2209 {
         // get all pins to default out GPIO.setup(self._pin_step, GPIO.OUT) (set them to output)
         // data)
 
+        self.reset_gpios();
         // self.readStepsPerRevolution()  read from CHOPCONF and getMicroSteppingResolution to set
         // the stepping resolution
         self.read_steps_per_revolution();
         self.clear_gstat();
         self.connection.flush_output_buffer();
         self.connection.flush_input_buffer();
+    }
+
+    fn reset_gpios(&mut self) {
+        self.chip.get_line(self.pins.0 as u32).unwrap().request(
+            LineRequestFlags::OUTPUT,
+            0,
+            "read-input",
+        );
+
+        self.chip.get_line(self.pins.1 as u32).unwrap().request(
+            LineRequestFlags::OUTPUT,
+            0,
+            "read-input",
+        );
+
+        self.chip.get_line(self.pins.2 as u32).unwrap().request(
+            LineRequestFlags::OUTPUT,
+            0,
+            "read-input",
+        );
     }
 
     fn clear_gstat(&self) {
