@@ -198,19 +198,19 @@ impl Tmc2209 {
         self.chip.get_line(self.pins.0 as u32).unwrap().request(
             LineRequestFlags::OUTPUT,
             0,
-            "read-input",
+            "output_pin_step",
         );
 
         self.chip.get_line(self.pins.1 as u32).unwrap().request(
             LineRequestFlags::OUTPUT,
             0,
-            "read-input",
+            "output_pin_dir",
         );
 
         self.chip.get_line(self.pins.2 as u32).unwrap().request(
             LineRequestFlags::OUTPUT,
             0,
-            "read-input",
+            "output_pin_en",
         );
     }
 
