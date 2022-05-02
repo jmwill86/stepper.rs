@@ -182,19 +182,15 @@ impl Tmc2209 {
     fn init(&mut self) {
         println!("init!");
 
-        //self.tmc_uart = TMC_UART(serialport, baudrate)
-
         // get all pins to default out GPIO.setup(self._pin_step, GPIO.OUT) (set them to output)
         // data)
 
         // self.readStepsPerRevolution()  read from CHOPCONF and getMicroSteppingResolution to set
         // the stepping resolution
         self.read_steps_per_revolution();
-
-        //self.clearGSTAT()
         self.clear_gstat();
-
-        //self.tmc_uart.flushSerialBuffer()
+        self.connection.flush_output_buffer();
+        self.connection.flush_input_buffer();
     }
 
     fn clear_gstat(&self) {
