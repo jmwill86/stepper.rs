@@ -109,7 +109,7 @@ impl Tmc2209 {
 
     //// Addresses
     const GCONF: u8 = 0x00;
-    //const GSTAT: u8 = 0x01;
+    const GSTAT: u8 = 0x01;
     //const IFCNT: u8 = 0x02;
     //const IOIN: u8 = 0x06;
     //const IHOLD_IRUN: u8 = 0x10;
@@ -132,8 +132,8 @@ impl Tmc2209 {
     //const MSTEP_REG_SELECT: u8 = 1 << 7;
 
     //// GSTAT
-    //const RESET: u8 = 1 << 0;
-    //const DRV_ERR: u8 = 1 << 1;
+    const RESET: u8 = 1 << 0;
+    const DRV_ERR: u8 = 1 << 1;
     //const UV_CP: u8 = 1 << 2;
 
     //// CHOPCONF
@@ -197,7 +197,14 @@ impl Tmc2209 {
         //self.tmc_uart.flushSerialBuffer()
     }
 
-    fn clear_gstat(&self) {}
+    fn clear_gstat(&self) {
+        let mut gstat: u32 = self.connection.read(self.get_read_bytes(Self::GSTAT)) as u32;
+        gstat = Self::set_bit(gstat, Self::RESET as u32);
+        gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
+        self.connection
+            .write(self.get_write_bytes(Self::GSTAT, gstat));
+    }
+
     fn read_steps_per_revolution(&mut self) -> u16 {
         //chopconf = self.tmc_uart.read_int(self.CHOPCONF)
         let chopconf = self.connection.read(self.get_read_bytes(Self::CHOPCONF));
@@ -257,7 +264,7 @@ impl Tmc2209 {
 
     /// Gets the full Vec for a write in correct format: [sync, address, register, 32bit data, CRC]
     /// [8,8,8,32,8]
-    fn get_write_bytes(&self) -> Vec<u8> {
+    fn get_write_bytes(&self, reg: u8, val: u32) -> Vec<u8> {
         let mut write_frame = vec![0xFF; 8];
         write_frame
         //self.rFrame[1] = self.mtr_id
@@ -282,11 +289,26 @@ impl Tmc2209 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::File;
+    use std::path::Path;
+    use std::sync::Arc;
 
     fn get_mock_tmc() -> Tmc2209 {
+        //let mockpath = Path::new(".");
+        //let mockchip = gpio_cdev::Chip {
+        //inner: Arc::new(gpio_cdev::InnerChip {
+        //file: File::open(mockpath.as_ref()).unwrap(),
+        //path: mockpath.as_ref().to_path_buf(),
+        //name: "test".to_owned(),
+        //label: "test".to_owned(),
+        //lines: 1,
+        //}),
+        //};
+
+        let mockchip = Chip::new("/dev/gpiochip0").unwrap();
         Tmc2209 {
             pins: (1, 1, 1), // step, dir, en
-            chip: Chip::new("testpath").unwrap(),
+            chip: mockchip,
             connection: Connection::new(ConnectionType::UART),
             crc_parity: 0,
             current_position: 0,
