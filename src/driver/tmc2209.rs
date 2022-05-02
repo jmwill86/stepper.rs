@@ -195,23 +195,23 @@ impl Tmc2209 {
     }
 
     fn reset_gpios(&mut self) {
-        self.chip.get_line(self.pins.0 as u32).unwrap().request(
-            LineRequestFlags::OUTPUT,
-            0,
-            "output_pin_step",
-        );
+        self.chip
+            .get_line(self.pins.0 as u32)
+            .unwrap()
+            .request(LineRequestFlags::OUTPUT, 0, "output_pin_step")
+            .expect("En pin could not be set as output");
 
-        self.chip.get_line(self.pins.1 as u32).unwrap().request(
-            LineRequestFlags::OUTPUT,
-            0,
-            "output_pin_dir",
-        );
+        self.chip
+            .get_line(self.pins.1 as u32)
+            .unwrap()
+            .request(LineRequestFlags::OUTPUT, 0, "output_pin_dir")
+            .expect("En pin could not be set as output");
 
-        self.chip.get_line(self.pins.2 as u32).unwrap().request(
-            LineRequestFlags::OUTPUT,
-            0,
-            "output_pin_en",
-        );
+        self.chip
+            .get_line(self.pins.2 as u32)
+            .unwrap()
+            .request(LineRequestFlags::OUTPUT, 0, "output_pin_en")
+            .expect("En pin could not be set as output");
     }
 
     fn clear_gstat(&self) {
