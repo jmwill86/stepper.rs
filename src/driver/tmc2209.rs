@@ -24,6 +24,33 @@ impl StepperBuilder for Tmc2209Builder {
     }
 
     fn build(self) -> Self::Stepper {
+
+        match self.chip {
+            Some(_) => println!("Chip found!") ,
+            None => {
+
+                let iterator = gpio_cdev::chips().expect("No chips found");
+                let mut counter = 0;
+                for chip1 in iterator {
+                    counter = counter + 1;
+                    println!(
+                    "Available chip {}: {}",
+                    counter,
+                    chip1
+                    .expect("Chips iter not found")
+                    .path()
+                    .to_str()
+                    .unwrap()
+                    );
+                }
+                panic!(
+                "Loading Chip failed. There are {} chips available.",
+                counter
+                );
+            }
+        }
+
+
         let mut stepper = Tmc2209 {
             pins: self.pins,
             chip: self.chip.expect("Chip was not found in build process"),
@@ -62,33 +89,6 @@ impl Stepper for Tmc2209 {
             chip: Chip::new("/dev/gpiochip0").ok(),
             connection: Connection::new(ConnectionType::UART),
         }
-
-        //match Chip::new("/dev/gpiochip0") {
-        //Ok(chip) => Self::Builder {
-        //pins,
-        //chip,
-        //connection: Connection::new(ConnectionType::UART),
-        //},
-        //Err(_) => {
-        //let iterator = gpio_cdev::chips().expect("No chips found");
-        //let mut counter = 0;
-        //for chip1 in iterator {
-        //counter = counter + 1;
-        //println!(
-        //"{}",
-        //chip1
-        //.expect("Chips iter not found")
-        //.path()
-        //.to_str()
-        //.unwrap()
-        //);
-        //}
-        //panic!(
-        //"Loading Chip failed. There are {} chips available.",
-        //counter
-        //);
-        //}
-        //}
     }
 
     fn move_to_position(&self, position: i32) {}
@@ -184,8 +184,9 @@ impl Tmc2209 {
         self.reset_gpios();
         self.read_steps_per_revolution();
         self.clear_gstat();
-        self.connection.flush_output_buffer();
-        self.connection.flush_input_buffer();
+        self.connection.clear_input_output();        
+        //self.connection.flush_output_buffer();
+        //self.connection.flush_input_buffer();
     }
 
     fn reset_gpios(&mut self) {
@@ -208,7 +209,7 @@ impl Tmc2209 {
             .expect("En pin could not be set as output");
     }
 
-    fn clear_gstat(&self) {
+    fn clear_gstat(&mut self) {
         let mut gstat: u32 = self.connection.read(self.get_read_bytes(Self::GSTAT)) as u32;
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
