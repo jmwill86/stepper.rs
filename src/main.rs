@@ -6,8 +6,7 @@ use stepper_rs::stepper::StepperBuilder;
 fn main() {
     println!("Running main...");
 
-    let tmc = Tmc2209::new((13, 19, 26))
-        .build(); // step, dir, en
+    let tmc = Tmc2209::new((13, 19, 26)).build(); // step, dir, en
 
     //let tmc = Tmc2209 { pin: (1, 1, 1) };
 

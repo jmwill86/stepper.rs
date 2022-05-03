@@ -24,32 +24,29 @@ impl StepperBuilder for Tmc2209Builder {
     }
 
     fn build(self) -> Self::Stepper {
-
         match self.chip {
-            Some(_) => println!("Chip found!") ,
+            Some(_) => println!("Chip found!"),
             None => {
-
                 let iterator = gpio_cdev::chips().expect("No chips found");
                 let mut counter = 0;
                 for chip1 in iterator {
                     counter = counter + 1;
                     println!(
-                    "Available chip {}: {}",
-                    counter,
-                    chip1
-                    .expect("Chips iter not found")
-                    .path()
-                    .to_str()
-                    .unwrap()
+                        "Available chip {}: {}",
+                        counter,
+                        chip1
+                            .expect("Chips iter not found")
+                            .path()
+                            .to_str()
+                            .unwrap()
                     );
                 }
                 panic!(
-                "Loading Chip failed. There are {} chips available.",
-                counter
+                    "Loading Chip failed. There are {} chips available.",
+                    counter
                 );
             }
         }
-
 
         let mut stepper = Tmc2209 {
             pins: self.pins,
@@ -184,7 +181,7 @@ impl Tmc2209 {
         self.reset_gpios();
         self.read_steps_per_revolution();
         self.clear_gstat();
-        self.connection.clear_input_output();        
+        self.connection.clear_input_output();
         //self.connection.flush_output_buffer();
         //self.connection.flush_input_buffer();
     }
