@@ -110,7 +110,7 @@ impl Tmc2209 {
     //// Addresses
     const GCONF: u8 = 0x00;
     const GSTAT: u8 = 0x01;
-    //const IFCNT: u8 = 0x02;
+    const IFCNT: u8 = 0x02;
     //const IOIN: u8 = 0x06;
     //const IHOLD_IRUN: u8 = 0x10;
     //const TSTEP: u8 = 0x12;
@@ -181,13 +181,7 @@ impl Tmc2209 {
 
     fn init(&mut self) {
         println!("init!");
-
-        // get all pins to default out GPIO.setup(self._pin_step, GPIO.OUT) (set them to output)
-        // data)
-
         self.reset_gpios();
-        // self.readStepsPerRevolution()  read from CHOPCONF and getMicroSteppingResolution to set
-        // the stepping resolution
         self.read_steps_per_revolution();
         self.clear_gstat();
         self.connection.flush_output_buffer();
@@ -216,10 +210,24 @@ impl Tmc2209 {
 
     fn clear_gstat(&self) {
         let mut gstat: u32 = self.connection.read(self.get_read_bytes(Self::GSTAT)) as u32;
+        //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
         gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
         self.connection
             .write(self.get_write_bytes(Self::GSTAT, gstat));
+    }
+
+    /// This does the write but also checks the IFCNT to ensure the write was successful or not.
+    fn write_check(&self, write_reg: Vec<u8>) -> Result<u8, &'static str> {
+        let ifcnt1 = self.get_read_bytes(Self::IFCNT);
+        let return_val = self.connection.write(write_reg);
+        let ifcnt2 = self.get_read_bytes(Self::IFCNT);
+
+        if ifcnt1 >= ifcnt2 {
+            Err("Write check was not written to register - write count register was not increased")
+        } else {
+            Ok(1)
+        }
     }
 
     fn read_steps_per_revolution(&mut self) -> u16 {
@@ -233,7 +241,7 @@ impl Tmc2209 {
             chopconf & (Self::MSRES0 | Self::MSRES1 | Self::MSRES2 | Self::MSRES3);
         msresdezimal = msresdezimal >> 24;
         msresdezimal = 8 - msresdezimal;
-        self.msres = msresdezimal.pow(2) as u16;
+        self.msres = 2_u32.pow(msresdezimal) as u16;
         self.msres
     }
 
