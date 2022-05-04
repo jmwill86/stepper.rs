@@ -63,7 +63,7 @@ impl Connection {
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     let mut buffer: Vec<u8> = vec![0; 12];
                     let read_result = self.port.read(buffer.as_mut_slice());
-                    println!("Full reply...{:?}", buffer);
+                    //println!("Full reply...{:?}", buffer);
                     let return_read = buffer[7..11].try_into().unwrap();
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     println!("Return: {:?}", return_read);

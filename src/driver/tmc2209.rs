@@ -213,6 +213,7 @@ impl Tmc2209 {
     fn clear_gstat(&mut self) {
         println!("Clear GSTAT");
         let mut gstat: u32 = self.read_int(self.get_read_bytes(Self::GSTAT));
+        println!("Gstat:{:?}", gstat);
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
         gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
@@ -222,9 +223,9 @@ impl Tmc2209 {
 
     /// This does the write but also checks the IFCNT to ensure the write was successful or not.
     fn write_check(&mut self, write_reg: Vec<u8>) -> Result<u8, &'static str> {
-        let ifcnt1 = self.get_read_bytes(Self::IFCNT);
+        let ifcnt1 = self.read_int(self.get_read_bytes(Self::IFCNT));
         let return_val = self.connection.write(write_reg);
-        let ifcnt2 = self.get_read_bytes(Self::IFCNT);
+        let ifcnt2 = self.read_int(self.get_read_bytes(Self::IFCNT));
 
         if ifcnt1 >= ifcnt2 {
             println!("Write not successfull. IFCNT was {:?} now {:?}.", ifcnt1, ifcnt2);
@@ -247,9 +248,7 @@ impl Tmc2209 {
             chopconf & (Self::MSRES0 | Self::MSRES1 | Self::MSRES2 | Self::MSRES3);
         msresdezimal = msresdezimal >> 24;
         msresdezimal = 8 - msresdezimal;
-        println!("msresdezial1:{}", msresdezimal);
         self.msres = 2_u32.pow(msresdezimal) as u16;
-        println!("Steps:{}", self.msres);
         self.msres
     }
 
@@ -298,18 +297,22 @@ impl Tmc2209 {
     /// Gets the full Vec for a write in correct format: [sync, address, register, 32bit data, CRC]
     /// [8,8,8,32,8]
     fn get_write_bytes(&self, reg: u8, val: u32) -> Vec<u8> {
-        let write_frame = vec![0xFF; 8];
+        let val_split = val.to_be_bytes();
+        let mut write_frame = vec![0xFF; 8];
+        write_frame[0] = 0x55;
+        write_frame[1] = 0x00;
+        write_frame[2] = reg | 0x80;
+        write_frame[3] = val_split[0];
+        write_frame[4] = val_split[1];
+        write_frame[5] = val_split[2];
+        write_frame[6] = val_split[3];
+        write_frame[7] = self.calculate_crc(&mut write_frame);
         write_frame
-        //self.rFrame[1] = self.mtr_id
-        //self.rFrame[2] = reg
-        //self.rFrame[3] = self.compute_crc8_atm(self.rFrame[:-1])
-        //rtn = self.ser.write(self.rFrame)
     }
 
     /// Get the full Vec for a read in correct format: [sync, address, register, crc]
     /// [8,8,8,8]
     fn get_read_bytes(&self, reg: u8) -> Vec<u8> {
-        // 8,8,8,8
         let mut read_frame = vec![0xFF; 4]; // could this be using with_capacity?
         read_frame[0] = 0x55;
         read_frame[1] = 0x00;
