@@ -57,11 +57,13 @@ impl Connection {
             match write_result {
                 Ok(result) => { 
                     if result != read_data.len() {
-                        return Err("Mismatch in receive/response counts for reading.")
+                        println!("Error");
+                        return Err("Missmatch in receive/response counts for reading.")
                     }
-                    std::thread::sleep(Duration::from_millis(100));
+                    std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     let mut buffer: Vec<u8> = vec![0; 12];
                     let read_result = self.port.read(buffer.as_mut_slice());
+                    println!("Full reply...{:?}", buffer);
                     let return_read = buffer[7..11].try_into().unwrap();
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     println!("Return: {:?}", return_read);

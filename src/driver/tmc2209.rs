@@ -206,13 +206,18 @@ impl Tmc2209 {
             .expect("En pin could not be set as output");
     }
 
+    fn read_int(&mut self, reg : Vec<u8>)->u32 {
+        u32::from_be_bytes(self.connection.read(reg).unwrap())
+    }
+
     fn clear_gstat(&mut self) {
-        let mut gstat: u32 = u32::from_le_bytes(self.connection.read(self.get_read_bytes(Self::GSTAT)).unwrap());
+        println!("Clear GSTAT");
+        let mut gstat: u32 = self.read_int(self.get_read_bytes(Self::GSTAT));
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
         gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
-        self.connection
-            .write(self.get_write_bytes(Self::GSTAT, gstat));
+        println!("Write GSTAT...{:?}", gstat);
+        self.write_check(self.get_write_bytes(Self::GSTAT, gstat));
     }
 
     /// This does the write but also checks the IFCNT to ensure the write was successful or not.
@@ -222,16 +227,19 @@ impl Tmc2209 {
         let ifcnt2 = self.get_read_bytes(Self::IFCNT);
 
         if ifcnt1 >= ifcnt2 {
+            println!("Write not successfull. IFCNT was {:?} now {:?}.", ifcnt1, ifcnt2);
             Err("Write check was not written to register - write count register was not increased")
         } else {
+            println!("Write was successfull!");
             Ok(1)
         }
     }
 
     fn read_steps_per_revolution(&mut self) -> u16 {
-        //chopconf = self.tmc_uart.read_int(self.CHOPCONF)
-        let chopconf = self.connection.read(self.get_read_bytes(Self::CHOPCONF));
-        self.get_steps_per_rev(1u32)
+        println!("Read steps per rev");
+        let chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF)); // Read int here.
+        println!("chopconf:{:?}", chopconf);
+        self.get_steps_per_rev(chopconf)
     }
 
     fn get_steps_per_rev(&mut self, chopconf: u32) -> u16 {
@@ -239,7 +247,9 @@ impl Tmc2209 {
             chopconf & (Self::MSRES0 | Self::MSRES1 | Self::MSRES2 | Self::MSRES3);
         msresdezimal = msresdezimal >> 24;
         msresdezimal = 8 - msresdezimal;
+        println!("msresdezial1:{}", msresdezimal);
         self.msres = 2_u32.pow(msresdezimal) as u16;
+        println!("Steps:{}", self.msres);
         self.msres
     }
 
