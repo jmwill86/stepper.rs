@@ -207,7 +207,7 @@ impl Tmc2209 {
     }
 
     fn clear_gstat(&mut self) {
-        let mut gstat: u32 = self.connection.read(self.get_read_bytes(Self::GSTAT)) as u32;
+        let mut gstat: u32 = u32::from_le_bytes(self.connection.read(self.get_read_bytes(Self::GSTAT)).unwrap());
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
         gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
@@ -216,7 +216,7 @@ impl Tmc2209 {
     }
 
     /// This does the write but also checks the IFCNT to ensure the write was successful or not.
-    fn write_check(&self, write_reg: Vec<u8>) -> Result<u8, &'static str> {
+    fn write_check(&mut self, write_reg: Vec<u8>) -> Result<u8, &'static str> {
         let ifcnt1 = self.get_read_bytes(Self::IFCNT);
         let return_val = self.connection.write(write_reg);
         let ifcnt2 = self.get_read_bytes(Self::IFCNT);
@@ -288,7 +288,7 @@ impl Tmc2209 {
     /// Gets the full Vec for a write in correct format: [sync, address, register, 32bit data, CRC]
     /// [8,8,8,32,8]
     fn get_write_bytes(&self, reg: u8, val: u32) -> Vec<u8> {
-        let mut write_frame = vec![0xFF; 8];
+        let write_frame = vec![0xFF; 8];
         write_frame
         //self.rFrame[1] = self.mtr_id
         //self.rFrame[2] = reg

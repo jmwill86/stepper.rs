@@ -21,6 +21,7 @@ impl Connection {
     //const UART_PORT: &'static str = "/dev/ttyAMA0";
     const UART_PORT: &'static str = "/dev/ttyS0";
     const UART_BAUDRATE: u32 = 9600;
+    const CALLING_PAUSE: u64 = 100;
 
     pub fn new(connection: ConnectionType) -> Self {
         let ports = serialport::available_ports().expect("No ports found!");
@@ -45,50 +46,62 @@ impl Connection {
             .expect("Serial port could not connect")
     }
 
-    pub fn read(&mut self, mut read_data: Vec<u8>) -> usize {
+    /// Reads data via X retry's to ensure maximum success
+    pub fn read(&mut self, mut read_data: Vec<u8>) -> Result<[u8;4], &'static str> {
         println!("Makes read call...{:?}", read_data);
         let mut i = 0;
 
         while i < 10 {
             self.clear_input_output();
             let write_result = self.port.write(read_data.as_mut_slice());
-            // Check write response is the same length as call.
-            //let read_result = self.port.read(read_data.as_mut_slice());
             match write_result {
                 Ok(result) => { 
-                    println!("Return ok: {:b}",result);
+                    if result != read_data.len() {
+                        return Err("Mismatch in receive/response counts for reading.")
+                    }
                     std::thread::sleep(Duration::from_millis(100));
                     let mut buffer: Vec<u8> = vec![0; 12];
                     let read_result = self.port.read(buffer.as_mut_slice());
-                    std::thread::sleep(Duration::from_millis(100));
-                    println!("Read result: {:?}", read_result);
-                    return result
+                    let return_read = buffer[7..11].try_into().unwrap();
+                    std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
+                    println!("Return: {:?}", return_read);
+                    return Ok(return_read)
                 }
                 Err(e) => {
-                    println!("Error: {}",e);
+                    println!("Failed to read data, retrying...")
                 }
             }
-            // we needs to check bytes are acorrect length here
-            // return(rtn[7:11])
             i = i + 1;
         }
         panic!("No valid answer from stepper after 10 tries.");
     }
 
-    pub fn write(&self, write_data: Vec<u8>) {
+    /// Writes to the register but does not check if write was successfull, that should be done in
+    /// the calling file.
+    pub fn write(&mut self, mut write_data: Vec<u8>) -> Result<(), &'static str> {
         println!("Makes write call...");
-        //IFCNT           =   0x02
 
-        //ifcnt1 = self.read_int(IFCNT)
-        //self.write_reg(reg, val)
-        //ifcnt2 = self.read_int(IFCNT)
+        self.clear_input_output();
+        let write_result = self.port.write(write_data.as_mut_slice());
+        std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
+        println!("Writing: {:?}", write_data);
 
-        //if(ifcnt1 >= ifcnt2):
-        //print("TMC2209: writing not successful!")
-        //print("ifcnt:",ifcnt1,ifcnt2)
-        //return False
-        //else:
-        //return True
+        match write_result {
+            Ok(result) => {
+                if result != write_data.len() {
+                    return Err("Mismatch in receive/response counts for writing.")
+                }
+                Ok(()) 
+            }
+            Err(e) => Err("Error writing to register")
+        }
+    }
+
+    pub fn clear_input_output(&self) {
+        self.port.clear(ClearBuffer::Output)
+            .expect("Failed to discard output buffer");
+        self.port.clear(ClearBuffer::Input)
+            .expect("Failed to discard input buffer");
     }
 
     //pub fn flush_input_buffer(&self) {
@@ -126,12 +139,6 @@ impl Connection {
         //}
     //}
 
-    pub fn clear_input_output(&self) {
-                    self.port.clear(ClearBuffer::Output)
-                        .expect("Failed to discard output buffer");
-                    self.port.clear(ClearBuffer::Input)
-                        .expect("Failed to discard input buffer");
-    }
 
     //pub fn flush_output_buffer(&mut self) {
 
