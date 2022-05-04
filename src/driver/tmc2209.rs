@@ -182,8 +182,6 @@ impl Tmc2209 {
         self.read_steps_per_revolution();
         self.clear_gstat();
         self.connection.clear_input_output();
-        //self.connection.flush_output_buffer();
-        //self.connection.flush_input_buffer();
     }
 
     fn reset_gpios(&mut self) {
@@ -206,29 +204,31 @@ impl Tmc2209 {
             .expect("En pin could not be set as output");
     }
 
-    fn read_int(&mut self, reg : Vec<u8>)->u32 {
+    fn read_int(&mut self, reg: Vec<u8>) -> u32 {
         u32::from_be_bytes(self.connection.read(reg).unwrap())
     }
 
     fn clear_gstat(&mut self) {
         println!("Clear GSTAT");
         let mut gstat: u32 = self.read_int(self.get_read_bytes(Self::GSTAT));
-        println!("Gstat:{:?}", gstat);
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
         gstat = Self::set_bit(gstat, Self::RESET as u32);
         gstat = Self::set_bit(gstat, Self::DRV_ERR as u32);
-        println!("Write GSTAT...{:?}", gstat);
-        self.write_check(self.get_write_bytes(Self::GSTAT, gstat));
+        self.write_check(self.get_write_bytes(Self::GSTAT, gstat))
+            .unwrap();
     }
 
     /// This does the write but also checks the IFCNT to ensure the write was successful or not.
     fn write_check(&mut self, write_reg: Vec<u8>) -> Result<u8, &'static str> {
         let ifcnt1 = self.read_int(self.get_read_bytes(Self::IFCNT));
-        let return_val = self.connection.write(write_reg);
+        self.connection.write(write_reg).unwrap();
         let ifcnt2 = self.read_int(self.get_read_bytes(Self::IFCNT));
 
         if ifcnt1 >= ifcnt2 {
-            println!("Write not successfull. IFCNT was {:?} now {:?}.", ifcnt1, ifcnt2);
+            println!(
+                "Write not successfull. IFCNT was {:?} now {:?}.",
+                ifcnt1, ifcnt2
+            );
             Err("Write check was not written to register - write count register was not increased")
         } else {
             println!("Write was successfull!");
@@ -239,7 +239,6 @@ impl Tmc2209 {
     fn read_steps_per_revolution(&mut self) -> u16 {
         println!("Read steps per rev");
         let chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF)); // Read int here.
-        println!("chopconf:{:?}", chopconf);
         self.get_steps_per_rev(chopconf)
     }
 
