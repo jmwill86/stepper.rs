@@ -2,6 +2,19 @@ use crate::connection::{Connection, ConnectionType};
 use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::{Chip, LineRequestFlags};
 
+pub enum GConfOption {
+    Direction = 1 << 3,
+    IScale = 1 << 0,
+    InternalRSense = 1 << 1,
+    SpreadCycle = 1 << 2,
+    MStepResolution = 1 << 7,
+}
+
+pub enum ChopConfOption {
+    Vsense = 1 << 17,
+    Intpol = 1 << 28,
+}
+
 pub struct Tmc2209Builder {
     pins: (u8, u8, u8), // step, dir, en
     chip: Option<Chip>,
@@ -251,10 +264,6 @@ impl Tmc2209 {
         self.msres
     }
 
-    fn read_gstat(&self) {
-        //
-    }
-
     /// Calculates CRC parity bit
     fn calculate_crc(&self, datagram: &mut Vec<u8>) -> u8 {
         let mut counter = datagram.len() - 1;
@@ -318,6 +327,34 @@ impl Tmc2209 {
         read_frame[2] = reg;
         read_frame[3] = self.calculate_crc(&mut read_frame);
         read_frame
+    }
+
+    pub fn enable_gconf_option(&mut self, option: GConfOption) {
+        let mut gconf = self.read_int(self.get_read_bytes(Self::GCONF));
+        gconf = Self::set_bit(gconf, option as u32);
+        self.write_check(self.get_write_bytes(Self::GCONF, gconf))
+            .unwrap();
+    }
+
+    pub fn disable_gconf_option(&mut self, option: GConfOption) {
+        let mut gconf = self.read_int(self.get_read_bytes(Self::GCONF));
+        gconf = Self::clear_bit(gconf, option as u32);
+        self.write_check(self.get_write_bytes(Self::GCONF, gconf))
+            .unwrap();
+    }
+
+    pub fn enable_chopconf_option(&mut self, option: ChopConfOption) {
+        let mut chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
+        chopconf = Self::set_bit(chopconf, option as u32);
+        self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
+            .unwrap();
+    }
+
+    pub fn disable_chopconf_option(&mut self, option: ChopConfOption) {
+        let mut chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
+        chopconf = Self::clear_bit(chopconf, option as u32);
+        self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
+            .unwrap();
     }
 }
 

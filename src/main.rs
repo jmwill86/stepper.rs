@@ -1,14 +1,15 @@
 use stepper_rs::connection::ConnectionType;
 use stepper_rs::driver::tmc2209::Tmc2209;
+use stepper_rs::driver::tmc2209::{ChopConfOption, GConfOption};
 use stepper_rs::stepper::Stepper;
 use stepper_rs::stepper::StepperBuilder;
 
 fn main() {
     println!("Running main...");
 
-    let tmc = Tmc2209::new((13, 19, 26)).build(); // step, dir, en
-
-    //let tmc = Tmc2209 { pin: (1, 1, 1) };
+    let mut tmc = Tmc2209::new((13, 19, 26)).build(); // step, dir, en
+    tmc.enable_gconf_option(GConfOption::IScale);
+    tmc.enable_chopconf_option(ChopConfOption::Vsense);
 
     //tmc.setLoglevel(Loglevel.debug)
     //tmc.setMovementAbsRel(MovementAbsRel.absolute)
