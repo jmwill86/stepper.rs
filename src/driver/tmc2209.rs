@@ -4,7 +4,7 @@ use gpio_cdev::{Chip, LineRequestFlags};
 
 pub enum GConfOption {
     Direction = 1 << 3,
-    IScale = 1 << 0,
+    IScaleAnalogue = 1 << 0,
     InternalRSense = 1 << 1,
     SpreadCycle = 1 << 2,
     MStepResolution = 1 << 7,
@@ -13,6 +13,11 @@ pub enum GConfOption {
 pub enum ChopConfOption {
     Vsense = 1 << 17,
     Intpol = 1 << 28,
+}
+
+pub enum Motor {
+    Enabled,
+    Disabled,
 }
 
 pub struct Tmc2209Builder {
@@ -105,7 +110,22 @@ impl Stepper for Tmc2209 {
 
     fn step(&self) {}
 
-    fn set_direction(&self, direction: Direction) {}
+    fn set_direction(&mut self, direction: Direction) {
+        let reg = 1 << 3;
+        let mut gconf = self.read_int(self.get_read_bytes(Self::GCONF));
+
+        match direction {
+            Direction::CW => {
+                gconf = Self::clear_bit(gconf, reg);
+            }
+            Direction::CCW => {
+                gconf = Self::set_bit(gconf, reg);
+            }
+        };
+
+        self.write_check(self.get_write_bytes(Self::GCONF, gconf))
+            .unwrap();
+    }
 
     fn run(&self) {}
 }
@@ -121,7 +141,7 @@ impl Tmc2209 {
     const GCONF: u8 = 0x00;
     const GSTAT: u8 = 0x01;
     const IFCNT: u8 = 0x02;
-    //const IOIN: u8 = 0x06;
+    const IOIN: u8 = 0x06;
     //const IHOLD_IRUN: u8 = 0x10;
     //const TSTEP: u8 = 0x12;
     //const VACTUAL: u8 = 0x22;
@@ -130,16 +150,16 @@ impl Tmc2209 {
     //const SG_RESULT: u8 = 0x41;
     //const MSCNT: u8 = 0x6A;
     const CHOPCONF: u8 = 0x6C;
-    //const DRVSTATUS: u8 = 0x6F;
+    const DRVSTATUS: u8 = 0x6F;
 
     //// GCONF
-    //const I_SCALE_ANALOG: u8 = 1 << 0;
-    //const INTERNAL_RSENSE: u8 = 1 << 1;
+    const I_SCALE_ANALOG: u8 = 1 << 0;
+    const INTERNAL_RSENSE: u8 = 1 << 1;
     const EN_SPREADCYCLE: u8 = 1 << 2;
-    //const SHAFT: u8 = 1 << 3;
-    //const INDEX_OTPW: u8 = 1 << 4;
-    //const INDEX_STEP: u8 = 1 << 5;
-    //const MSTEP_REG_SELECT: u8 = 1 << 7;
+    const SHAFT: u8 = 1 << 3;
+    const INDEX_OTPW: u8 = 1 << 4;
+    const INDEX_STEP: u8 = 1 << 5;
+    const MSTEP_REG_SELECT: u8 = 1 << 7;
 
     //// GSTAT
     const RESET: u8 = 1 << 0;
@@ -147,35 +167,35 @@ impl Tmc2209 {
     //const UV_CP: u8 = 1 << 2;
 
     //// CHOPCONF
-    //const VSENSE: u32 = 1 << 17;
+    const VSENSE: u32 = 1 << 17;
     const MSRES0: u32 = 1 << 24;
     const MSRES1: u32 = 1 << 25;
     const MSRES2: u32 = 1 << 26;
     const MSRES3: u32 = 1 << 27;
-    //const INTPOL: u32 = 1 << 28;
+    const INTPOL: u32 = 1 << 28;
 
     //// IOIN
-    //const IO_ENN: u8 = 1 << 0;
-    //const IO_STEP: u8 = 1 << 7;
-    //const IO_SPREAD: u16 = 1 << 8;
-    //const IO_DIR: u16 = 1 << 9;
+    const IO_ENN: u8 = 1 << 0;
+    const IO_STEP: u8 = 1 << 7;
+    const IO_SPREAD: u16 = 1 << 8;
+    const IO_DIR: u16 = 1 << 9;
 
-    //// DRVSTATUS
-    //const STST: u32 = 1 << 31;
-    //const STEALTH: u32 = 1 << 30;
-    //const CS_ACTUAL: u32 = 31 << 16;
-    //const T157: u16 = 1 << 11;
-    //const T150: u16 = 1 << 10;
-    //const T143: u16 = 1 << 9;
-    //const T120: u16 = 1 << 8;
-    //const OLB: u8 = 1 << 7;
-    //const OLA: u8 = 1 << 6;
-    //const S2VSB: u8 = 1 << 5;
-    //const S2VSA: u8 = 1 << 4;
-    //const S2GB: u8 = 1 << 3;
-    //const S2GA: u8 = 1 << 2;
-    //const OT: u8 = 1 << 1;
-    //const OTPW: u8 = 1 << 0;
+    // DRVSTATUS
+    const STST: u32 = 1 << 31;
+    const STEALTH: u32 = 1 << 30;
+    const CS_ACTUAL: u32 = 31 << 16;
+    const T157: u16 = 1 << 11;
+    const T150: u16 = 1 << 10;
+    const T143: u16 = 1 << 9;
+    const T120: u16 = 1 << 8;
+    const OLB: u8 = 1 << 7;
+    const OLA: u8 = 1 << 6;
+    const S2VSB: u8 = 1 << 5;
+    const S2VSA: u8 = 1 << 4;
+    const S2GB: u8 = 1 << 3;
+    const S2GA: u8 = 1 << 2;
+    const OT: u8 = 1 << 1;
+    const OTPW: u8 = 1 << 0;
 
     //// IHOLD_IRUN
     //const IHOLD: u8 = 31 << 0;
@@ -355,6 +375,175 @@ impl Tmc2209 {
         chopconf = Self::clear_bit(chopconf, option as u32);
         self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
             .unwrap();
+    }
+
+    pub fn set_currenet(&self) {}
+
+    #[allow(non_snake_case)]
+    pub fn read_IOIN(&mut self) {
+        println!("Reading IOIN: ---");
+
+        let ioin = self.read_int(self.get_read_bytes(Self::IOIN));
+
+        if ioin as u16 & Self::IO_SPREAD > 0 {
+            println!("Spread is high");
+        } else {
+            println!("Spread is low");
+        }
+
+        if ioin as u16 & Self::IO_DIR > 0 {
+            println!("Dir is high");
+        } else {
+            println!("Dir is low");
+        }
+
+        if ioin as u8 & Self::IO_STEP > 0 {
+            println!("Step is high");
+        } else {
+            println!("Step is low");
+        }
+
+        if ioin as u8 & Self::IO_ENN > 0 {
+            println!("En is high");
+        } else {
+            println!("En is low");
+        }
+
+        println!("------")
+    }
+
+    #[allow(non_snake_case)]
+    pub fn read_CHOPCONF(&mut self) {
+        println!("Reading ChopConfig: ---");
+
+        let chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
+
+        println!(
+            "Native {:?} microstep setting",
+            self.read_steps_per_revolution()
+        );
+
+        if chopconf & Self::INTPOL > 0 {
+            println!("Interpolation to 256 microsteps");
+        }
+
+        if chopconf & Self::VSENSE > 0 {
+            println!("1: High sensitivity, low sense resistor voltage");
+        } else {
+            println!("0: Low sensitivity, high sense resistor voltage");
+        }
+
+        println!("------");
+    }
+
+    #[allow(non_snake_case)]
+    pub fn read_DRVSTATUS(&mut self) {
+        println!("Reading DRIVER STATUS: ---");
+        let drvstatus = self.read_int(self.get_read_bytes(Self::DRVSTATUS));
+
+        if drvstatus & Self::STST > 0 {
+            println!("TMC2209: Info: motor is standing still");
+        } else {
+            println!("TMC2209: Info: motor is running");
+        }
+
+        if drvstatus & Self::STEALTH > 0 {
+            println!("TMC2209: Info: motor is running on StealthChop");
+        } else {
+            println!("TMC2209: Info: motor is running on SpreadCycle");
+        }
+        let mut cs_actual = drvstatus & Self::CS_ACTUAL;
+        cs_actual = cs_actual >> 16;
+
+        let drvstatus = drvstatus as u8;
+        //println!("TMC2209: CS actual: "+str(cs_actual));
+
+        if drvstatus & Self::OLB > 0 {
+            println!("TMC2209: Warning: Open load detected on phase B");
+        }
+
+        if drvstatus & Self::OLA > 0 {
+            println!("TMC2209: Warning: Open load detected on phase A");
+        }
+
+        if drvstatus & Self::S2VSB > 0 {
+            println!("TMC2209: Error: Short on low-side MOSFET detected on phase B. The driver becomes disabled");
+        }
+
+        if drvstatus & Self::S2VSA > 0 {
+            println!("TMC2209: Error: Short on low-side MOSFET detected on phase A. The driver becomes disabled");
+        }
+
+        if drvstatus & Self::S2GB > 0 {
+            println!(
+                "TMC2209: Error: Short to GND detected on phase B. The driver becomes disabled. "
+            );
+        }
+
+        if drvstatus & Self::S2GA > 0 {
+            println!(
+                "TMC2209: Error: Short to GND detected on phase A. The driver becomes disabled. "
+            );
+        }
+
+        if drvstatus & Self::OT > 0 {
+            println!("TMC2209: Error: Driver Overheating!");
+        }
+
+        if drvstatus & Self::OTPW > 0 {
+            println!("TMC2209: Warning: Driver Overheating Prewarning!");
+        }
+
+        println!("---");
+    }
+
+    #[allow(non_snake_case)]
+    pub fn read_GCONF(&mut self) {
+        println!("Reading GCONF: ---");
+        let gconf = self.read_int(self.get_read_bytes(Self::GCONF)) as u8;
+
+        if gconf & Self::I_SCALE_ANALOG > 0 {
+            println!("TMC2209: Driver is using voltage supplied to VREF as current reference");
+        } else {
+            println!("TMC2209: Driver is using internal reference derived from 5VOUT");
+        }
+        if gconf & Self::INTERNAL_RSENSE > 0 {
+            println!(
+                "TMC2209: Internal sense resistors. Use current supplied into VREF as reference."
+            );
+            println!("TMC2209: VREF pin internally is driven to GND in this mode.");
+            println!("TMC2209: This will most likely destroy your driver!!!");
+            panic!("SERIOUS ERROR DETECTED");
+        } else {
+            println!("TMC2209: Operation with external sense resistors");
+        }
+        if gconf & Self::EN_SPREADCYCLE > 0 {
+            println!("TMC2209: SpreadCycle mode enabled");
+        } else {
+            println!("TMC2209: StealthChop PWM mode enabled");
+        }
+        if gconf & Self::SHAFT > 0 {
+            println!("TMC2209: Inverse motor direction");
+        } else {
+            println!("TMC2209: normal motor direction");
+        }
+        if gconf & Self::INDEX_OTPW > 0 {
+            println!("TMC2209: INDEX pin outputs overtemperature prewarning flag");
+        } else {
+            println!("TMC2209: INDEX shows the first microstep position of sequencer");
+        }
+        if gconf & Self::INDEX_STEP > 0 {
+            println!("TMC2209: INDEX output shows step pulses from internal pulse generator");
+        } else {
+            println!("TMC2209: INDEX output as selected by index_otpw");
+        }
+        if gconf & Self::MSTEP_REG_SELECT > 0 {
+            println!("TMC2209: Microstep resolution selected by MSTEP register");
+        } else {
+            println!("TMC2209: Microstep resolution selected by pins MS1, MS2");
+        }
+
+        println!("------");
     }
 }
 

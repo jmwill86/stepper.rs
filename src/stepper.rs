@@ -24,6 +24,6 @@ pub trait Stepper {
     fn new(pins: (u8, u8, u8)) -> Self::Builder;
     fn move_to_position(&self, position: i32);
     fn step(&self);
-    fn set_direction(&self, direction: Direction);
+    fn set_direction(&mut self, direction: Direction);
     fn run(&self);
 }
