@@ -25,12 +25,12 @@ fn main() {
     tmc.read_GCONF();
 
     //tmc.set_acceleration(2000);
-    tmc.set_max_speed(500);
+    //tmc.set_max_speed(500);
     tmc.set_motor_enabled(Motor::Enabled);
 
     tmc.move_to_position(200);
-    tmc.move_steps(200);
-    tmc.move_steps(-200);
+    //tmc.move_steps(200);
+    //tmc.move_steps(-200);
 
     println!("Complete!");
 }

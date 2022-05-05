@@ -1,6 +1,8 @@
 use crate::connection::{Connection, ConnectionType};
 use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::{Chip, LineRequestFlags};
+use std::thread;
+use std::time::Duration;
 
 pub enum GConfOption {
     Direction = 1 << 3,
@@ -106,9 +108,55 @@ impl Stepper for Tmc2209 {
         }
     }
 
-    fn move_to_position(&self, position: i32) {}
+    fn move_to_position(&mut self, position: i32) {
+        //if(movement_abs_rel is not None):
+        //this_movement_abs_rel = movement_abs_rel
+        //else:
+        //this_movement_abs_rel = self._movement_abs_rel
 
-    fn step(&self) {}
+        //if(this_movement_abs_rel == MovementAbsRel.relative):
+        //self._targetPos = self._currentPos + steps
+        //else:
+        //self._targetPos = steps
+        let target_position = self.current_position as i32 + position;
+
+        //self._stop = False
+        //self._stepInterval = 0
+        //self._speed = 0.0
+        //self._n = 0
+        //self.computeNewSpeed()
+        let mut i = 0;
+
+        while i < 10 {
+            self.step();
+            std::thread::sleep(Duration::from_millis(1000));
+            i = i + 1;
+        }
+        println!("Stepping ended!");
+        //while (self.run() and not self._stop): #returns false, when target position is reached
+        //pass
+        //return not self._stop
+    }
+
+    fn step(&mut self) {
+        //GPIO.output(self._pin_step, GPIO.HIGH)
+        //time.sleep(1/1000/1000)
+        //GPIO.output(self._pin_step, GPIO.LOW)
+        //time.sleep(1/1000/1000)
+
+        let handle = self
+            .chip
+            .get_line(self.pins.0 as u32)
+            .unwrap()
+            .request(LineRequestFlags::OUTPUT, 1, "step_request")
+            .unwrap();
+
+        handle.set_value(1).unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        handle.set_value(0).unwrap();
+        std::thread::sleep(Duration::from_millis(100));
+        println!("Step Made!")
+    }
 
     fn set_direction(&mut self, direction: Direction) {
         let reg = 1 << 3;
@@ -378,6 +426,24 @@ impl Tmc2209 {
     }
 
     pub fn set_currenet(&self) {}
+
+    pub fn set_motor_enabled(&mut self, enabled: Motor) {
+        let handle = self
+            .chip
+            .get_line(self.pins.2 as u32)
+            .unwrap()
+            .request(LineRequestFlags::OUTPUT, 1, "motor_enabled")
+            .unwrap();
+
+        match enabled {
+            Motor::Enabled => {
+                handle.set_value(1).unwrap();
+            }
+            Motor::Disabled => {
+                handle.set_value(0).unwrap();
+            }
+        }
+    }
 
     #[allow(non_snake_case)]
     pub fn read_IOIN(&mut self) {
