@@ -4,6 +4,18 @@ use gpio_cdev::{Chip, LineRequestFlags};
 use std::thread;
 use std::time::Duration;
 
+pub enum MicrostepRes {
+    ONE = 1,
+    TWO = 2,
+    FOUR = 4,
+    EIGHT = 8,
+    SIXTEEN = 16,
+    THIRTY_TWO = 32,
+    SIXTY_FOUR = 64,
+    ONE_TWO_FIVE = 125,
+    TWO_FIVE_SIX = 256
+}
+
 pub enum GConfOption {
     Direction = 1 << 3,
     IScaleAnalogue = 1 << 0,
@@ -427,7 +439,22 @@ impl Tmc2209 {
             .unwrap();
     }
 
-    pub fn set_currenet(&self) {}
+    pub fn set_current(&self) {
+        //
+    }
+
+    pub fn set_microstepping_resolution(&mut self, resolution : MicrostepRes) {
+        let mut chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
+        let mut msresdezimal = ((resolution as u8) as f32).log2() as u32;
+
+        chopconf = chopconf & (!Self::MSRES0 | !Self::MSRES1 | !Self::MSRES2 | !Self::MSRES3);
+        msresdezimal = 8 - msresdezimal;
+        chopconf = chopconf & 0xF0FFFFFF;
+        chopconf = chopconf | msresdezimal << 24;
+        
+        self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
+            .unwrap();
+    }
 
     pub fn set_motor_enabled(&mut self, enabled: Motor) {
         let handle = self
