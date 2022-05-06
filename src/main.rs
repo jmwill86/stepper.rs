@@ -13,6 +13,7 @@ fn main() {
     tmc.set_direction(Direction::CW);
     println!("Enable Vsense");
     tmc.enable_chopconf_option(ChopConfOption::Vsense);
+    println!("Set current");
     tmc.set_current(300);
     println!("Enable Iscale");
     tmc.enable_gconf_option(GConfOption::IScaleAnalogue);
