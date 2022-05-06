@@ -129,7 +129,7 @@ impl Stepper for Tmc2209 {
 
         while i < 10 {
             self.step();
-            std::thread::sleep(Duration::from_millis(1000));
+            std::thread::sleep(Duration::from_millis(100));
             i = i + 1;
         }
         println!("Stepping ended!");
@@ -286,7 +286,10 @@ impl Tmc2209 {
     }
 
     fn read_int(&mut self, reg: Vec<u8>) -> u32 {
-        u32::from_be_bytes(self.connection.read(reg).unwrap())
+        println!("--- Read int: {:?}", reg);
+        let reply = u32::from_be_bytes(self.connection.read(reg).unwrap());
+        println!("--- Read int reply: {:?}", reply);
+        reply
     }
 
     fn clear_gstat(&mut self) {
@@ -318,7 +321,6 @@ impl Tmc2209 {
     }
 
     fn read_steps_per_revolution(&mut self) -> u16 {
-        println!("Read steps per rev");
         let chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF)); // Read int here.
         self.get_steps_per_rev(chopconf)
     }

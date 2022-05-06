@@ -1,4 +1,3 @@
-//use clap::{Arg, Command};
 use serialport::{ClearBuffer, DataBits, Parity, SerialPort, StopBits};
 use std::error::Error;
 use std::io::{self, Read};
@@ -48,7 +47,7 @@ impl Connection {
 
     /// Reads data via X retry's to ensure maximum success
     pub fn read(&mut self, mut read_data: Vec<u8>) -> Result<[u8; 4], &'static str> {
-        println!("Makes read call...{:?}", read_data);
+        println!("--- Read Reg: {:?}", read_data);
         let mut i = 0;
 
         while i < 10 {
@@ -63,10 +62,10 @@ impl Connection {
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     let mut buffer: Vec<u8> = vec![0; 12];
                     let read_result = self.port.read(buffer.as_mut_slice());
-                    //println!("Full reply...{:?}", buffer);
+                    println!("Full reply...{:?}", buffer);
                     let return_read = buffer[7..11].try_into().unwrap();
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
-                    println!("Return: {:?}", return_read);
+                    println!("--- Read Reg reply: {:?}", return_read);
                     return Ok(return_read);
                 }
                 Err(e) => {
@@ -81,12 +80,11 @@ impl Connection {
     /// Writes to the register but does not check if write was successfull, that should be done in
     /// the calling file.
     pub fn write(&mut self, mut write_data: Vec<u8>) -> Result<(), &'static str> {
-        println!("Makes write call...");
+        println!("--- Write Reg: {:?}", write_data);
 
         self.clear_input_output();
         let write_result = self.port.write(write_data.as_mut_slice());
         std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
-        println!("Writing: {:?}", write_data);
 
         match write_result {
             Ok(result) => {

@@ -8,17 +8,23 @@ fn main() {
     println!("Running main...");
 
     let mut tmc = Tmc2209::new((13, 19, 26)).build(); // step, dir, en
-
+    println!("Set dir");
     tmc.set_direction(Direction::CW);
+    println!("Enable Vsense");
     tmc.enable_chopconf_option(ChopConfOption::Vsense);
     //tmc.set_current(300);
+    println!("Enable Iscale");
     tmc.enable_gconf_option(GConfOption::IScaleAnalogue);
+    println!("Enable Intpol");
     tmc.enable_chopconf_option(ChopConfOption::Intpol);
+    println!("Disable Spreadcycle");
     tmc.disable_gconf_option(GConfOption::SpreadCycle);
     //tmc.setMicrosteppingResolution(2)
+    println!("Disable InternalRSense");
     tmc.disable_gconf_option(GConfOption::InternalRSense);
 
     //// Read details
+    println!("Read IOIN");
     tmc.read_IOIN();
     tmc.read_CHOPCONF();
     tmc.read_DRVSTATUS();
