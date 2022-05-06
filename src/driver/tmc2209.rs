@@ -3,6 +3,7 @@ use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::{Chip, LineRequestFlags};
 use std::thread;
 use std::time::Duration;
+use std::cmp::{min, max};
 
 pub enum MicrostepRes {
     ONE = 1,
@@ -139,9 +140,9 @@ impl Stepper for Tmc2209 {
         //self.computeNewSpeed()
         let mut i = 0;
 
-        while i < 10 {
+        while i < 100 {
             self.step();
-            std::thread::sleep(Duration::from_millis(100));
+            std::thread::sleep(Duration::from_millis(10));
             i = i + 1;
         }
         println!("Stepping ended!");
@@ -160,13 +161,13 @@ impl Stepper for Tmc2209 {
             .chip
             .get_line(self.pins.0 as u32)
             .unwrap()
-            .request(LineRequestFlags::OUTPUT, 1, "step_request")
+            .request(LineRequestFlags::OUTPUT, 0, "step_request")
             .unwrap();
 
         handle.set_value(1).unwrap();
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(1));
         handle.set_value(0).unwrap();
-        std::thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(1));
         println!("Step Made!")
     }
 
@@ -202,7 +203,7 @@ impl Tmc2209 {
     const GSTAT: u8 = 0x01;
     const IFCNT: u8 = 0x02;
     const IOIN: u8 = 0x06;
-    //const IHOLD_IRUN: u8 = 0x10;
+    const IHOLD_IRUN: u8 = 0x10;
     //const TSTEP: u8 = 0x12;
     //const VACTUAL: u8 = 0x22;
     //const TCOOLTHRS: u8 = 0x14;
@@ -439,8 +440,42 @@ impl Tmc2209 {
             .unwrap();
     }
 
-    pub fn set_current(&self) {
-        //
+    pub fn get_vsense(&mut self) -> u32 {
+        let chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
+        chopconf & Self::VSENSE
+    }
+
+    pub fn set_current(&mut self, current: u16) {
+        let hold_current_multiplier = 0.5;
+        let hold_current_delay = 10;
+        let vref = 1.2;
+        let mut cs_irun = 0;
+        let rsense = 0.11;
+        let mut vfs  = 0.0;
+
+        if self.get_vsense() > 0 {
+            vfs = 0.180 * vref / 2.5;
+        } else {
+            vfs = 0.325 * vref / 2.5;
+        }
+            
+        let mut cs_irun = 32.0*1.41421*(current as f32)/1000.0*(rsense+0.02)/vfs - 1.0;
+        cs_irun = cs_irun.min(31.0).max(0.0);
+        let cs_ihold = hold_current_multiplier * cs_irun;
+        let cs_irun_u32 = cs_irun.round() as u32;
+        let cs_ihold_u32 = cs_ihold.round() as u32;
+        self.set_irun_ihold(cs_ihold_u32, cs_irun_u32, hold_current_delay);
+    }
+
+    fn set_irun_ihold(&mut self, ihold : u32, irun :u32, hold_current_delay : u32) {
+        let mut ihold_irun = 0;
+        ihold_irun = ihold_irun | ihold << 0;
+        ihold_irun = ihold_irun | irun << 8;
+        ihold_irun = ihold_irun | hold_current_delay << 16;
+
+        self.write_check(self.get_write_bytes(Self::IHOLD_IRUN, ihold_irun))
+            .unwrap();
+
     }
 
     pub fn set_microstepping_resolution(&mut self, resolution : MicrostepRes) {
@@ -454,6 +489,8 @@ impl Tmc2209 {
         
         self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
             .unwrap();
+
+        self.enable_gconf_option(GConfOption::MStepResolution );
     }
 
     pub fn set_motor_enabled(&mut self, enabled: Motor) {
@@ -466,10 +503,10 @@ impl Tmc2209 {
 
         match enabled {
             Motor::Enabled => {
-                handle.set_value(1).unwrap();
+                handle.set_value(0).unwrap();
             }
             Motor::Disabled => {
-                handle.set_value(0).unwrap();
+                handle.set_value(1).unwrap();
             }
         }
     }

@@ -8,9 +8,8 @@ fn main() {
     println!("Running main...");
 
     let mut tmc = Tmc2209::new((13, 19, 26)).build(); // step, dir, en
-    panic!("End");
     println!("Set dir");
-    tmc.set_direction(Direction::CW);
+    tmc.set_direction(Direction::CCW);
     println!("Enable Vsense");
     tmc.enable_chopconf_option(ChopConfOption::Vsense);
     println!("Set current");
@@ -21,6 +20,7 @@ fn main() {
     tmc.enable_chopconf_option(ChopConfOption::Intpol);
     println!("Disable Spreadcycle");
     tmc.disable_gconf_option(GConfOption::SpreadCycle);
+    println!("Microstep resolution");
     tmc.set_microstepping_resolution(MicrostepRes::TWO);
     println!("Disable InternalRSense");
     tmc.disable_gconf_option(GConfOption::InternalRSense);
