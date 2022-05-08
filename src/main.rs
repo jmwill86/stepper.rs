@@ -1,5 +1,5 @@
 use stepper_rs::driver::tmc2209::Tmc2209;
-use stepper_rs::driver::tmc2209::{MicrostepRes, ChopConfOption, GConfOption, Motor};
+use stepper_rs::driver::tmc2209::{ChopConfOption, GConfOption, MicrostepRes, Motor};
 use stepper_rs::stepper::Direction;
 use stepper_rs::stepper::Stepper;
 use stepper_rs::stepper::StepperBuilder;
@@ -36,8 +36,8 @@ fn main() {
     //tmc.set_max_speed(500);
     tmc.set_motor_enabled(Motor::Enabled);
 
-    tmc.move_to_position(200);
-    //tmc.move_steps(200);
+    //tmc.move_to_position(200);
+    tmc.move_steps(200);
     //tmc.move_steps(-200);
 
     println!("Complete!");

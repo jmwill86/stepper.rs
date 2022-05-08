@@ -1,5 +1,4 @@
 use serialport::{ClearBuffer, DataBits, Parity, SerialPort, StopBits};
-use std::error::Error;
 use std::io::{self, Read};
 use std::panic::panic_any;
 use std::sync::mpsc;

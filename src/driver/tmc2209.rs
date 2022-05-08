@@ -1,9 +1,9 @@
 use crate::connection::{Connection, ConnectionType};
 use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::{Chip, LineRequestFlags};
+use std::cmp::{max, min};
 use std::thread;
 use std::time::Duration;
-use std::cmp::{min, max};
 
 pub enum MicrostepRes {
     ONE = 1,
@@ -14,7 +14,7 @@ pub enum MicrostepRes {
     THIRTY_TWO = 32,
     SIXTY_FOUR = 64,
     ONE_TWO_FIVE = 125,
-    TWO_FIVE_SIX = 256
+    TWO_FIVE_SIX = 256,
 }
 
 pub enum GConfOption {
@@ -142,7 +142,7 @@ impl Stepper for Tmc2209 {
 
         while i < 100 {
             self.step();
-            std::thread::sleep(Duration::from_millis(10));
+            std::thread::sleep(Duration::from_micros(1000));
             i = i + 1;
         }
         println!("Stepping ended!");
@@ -151,12 +151,17 @@ impl Stepper for Tmc2209 {
         //return not self._stop
     }
 
-    fn step(&mut self) {
-        //GPIO.output(self._pin_step, GPIO.HIGH)
-        //time.sleep(1/1000/1000)
-        //GPIO.output(self._pin_step, GPIO.LOW)
-        //time.sleep(1/1000/1000)
+    fn move_steps(&mut self, steps: i32) {
+        let mut i = 0;
+        while i < steps {
+            self.step();
+            std::thread::sleep(Duration::from_micros(500));
+            i = i + 1;
+        }
+        println!("Stepping ended!");
+    }
 
+    fn step(&mut self) {
         let handle = self
             .chip
             .get_line(self.pins.0 as u32)
@@ -165,9 +170,9 @@ impl Stepper for Tmc2209 {
             .unwrap();
 
         handle.set_value(1).unwrap();
-        std::thread::sleep(Duration::from_millis(1));
+        std::thread::sleep(Duration::from_micros(1));
         handle.set_value(0).unwrap();
-        std::thread::sleep(Duration::from_millis(1));
+        std::thread::sleep(Duration::from_micros(1));
         println!("Step Made!")
     }
 
@@ -187,8 +192,6 @@ impl Stepper for Tmc2209 {
         self.write_check(self.get_write_bytes(Self::GCONF, gconf))
             .unwrap();
     }
-
-    fn run(&self) {}
 }
 
 impl Tmc2209 {
@@ -451,15 +454,15 @@ impl Tmc2209 {
         let vref = 1.2;
         let mut cs_irun = 0;
         let rsense = 0.11;
-        let mut vfs  = 0.0;
+        let mut vfs = 0.0;
 
         if self.get_vsense() > 0 {
             vfs = 0.180 * vref / 2.5;
         } else {
             vfs = 0.325 * vref / 2.5;
         }
-            
-        let mut cs_irun = 32.0*1.41421*(current as f32)/1000.0*(rsense+0.02)/vfs - 1.0;
+
+        let mut cs_irun = 32.0 * 1.41421 * (current as f32) / 1000.0 * (rsense + 0.02) / vfs - 1.0;
         cs_irun = cs_irun.min(31.0).max(0.0);
         let cs_ihold = hold_current_multiplier * cs_irun;
         let cs_irun_u32 = cs_irun.round() as u32;
@@ -467,7 +470,7 @@ impl Tmc2209 {
         self.set_irun_ihold(cs_ihold_u32, cs_irun_u32, hold_current_delay);
     }
 
-    fn set_irun_ihold(&mut self, ihold : u32, irun :u32, hold_current_delay : u32) {
+    fn set_irun_ihold(&mut self, ihold: u32, irun: u32, hold_current_delay: u32) {
         let mut ihold_irun = 0;
         ihold_irun = ihold_irun | ihold << 0;
         ihold_irun = ihold_irun | irun << 8;
@@ -475,10 +478,9 @@ impl Tmc2209 {
 
         self.write_check(self.get_write_bytes(Self::IHOLD_IRUN, ihold_irun))
             .unwrap();
-
     }
 
-    pub fn set_microstepping_resolution(&mut self, resolution : MicrostepRes) {
+    pub fn set_microstepping_resolution(&mut self, resolution: MicrostepRes) {
         let mut chopconf = self.read_int(self.get_read_bytes(Self::CHOPCONF));
         let mut msresdezimal = ((resolution as u8) as f32).log2() as u32;
 
@@ -486,11 +488,11 @@ impl Tmc2209 {
         msresdezimal = 8 - msresdezimal;
         chopconf = chopconf & 0xF0FFFFFF;
         chopconf = chopconf | msresdezimal << 24;
-        
+
         self.write_check(self.get_write_bytes(Self::CHOPCONF, chopconf))
             .unwrap();
 
-        self.enable_gconf_option(GConfOption::MStepResolution );
+        self.enable_gconf_option(GConfOption::MStepResolution);
     }
 
     pub fn set_motor_enabled(&mut self, enabled: Motor) {
