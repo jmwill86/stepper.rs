@@ -1,8 +1,5 @@
 use serialport::{ClearBuffer, DataBits, Parity, SerialPort, StopBits};
-use std::io::{self, Read};
-use std::panic::panic_any;
-use std::sync::mpsc;
-use std::thread;
+use std::io::Read;
 use std::time::Duration;
 
 pub enum ConnectionType {
@@ -60,14 +57,14 @@ impl Connection {
                     }
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     let mut buffer: Vec<u8> = vec![0; 12];
-                    let read_result = self.port.read(buffer.as_mut_slice());
+                    self.port.read(buffer.as_mut_slice()).unwrap();
                     println!("Full reply...{:?}", buffer);
                     let return_read = buffer[7..11].try_into().unwrap();
                     std::thread::sleep(Duration::from_millis(Self::CALLING_PAUSE));
                     println!("--- Read Reg reply: {:?}", return_read);
                     return Ok(return_read);
                 }
-                Err(e) => {
+                Err(_) => {
                     println!("Failed to read data, retrying...")
                 }
             }
@@ -92,7 +89,7 @@ impl Connection {
                 }
                 Ok(())
             }
-            Err(e) => Err("Error writing to register"),
+            Err(_) => Err("Error writing to register"),
         }
     }
 
@@ -103,107 +100,6 @@ impl Connection {
         self.port
             .clear(ClearBuffer::Input)
             .expect("Failed to discard input buffer");
-    }
-
-    //pub fn flush_input_buffer(&self) {
-    //let chan_clear_buf = self.input_service();
-
-    //println!("Clearing Input buffer...");
-    //println!(
-    //"Connected to {} at {} baud",
-    //Self::UART_PORT,
-    //Self::UART_BAUDRATE
-    //);
-
-    //loop {
-    //println!(
-    //"Bytes available to read: {}",
-    //self.port.bytes_to_read().expect("Error calling bytes_to_read")
-    //);
-
-    //match chan_clear_buf.try_recv() {
-    //Ok(_) => {
-    //println!(
-    //"------------------------- Discarding buffer ------------------------- "
-    //);
-    //self.port.clear(ClearBuffer::Input)
-    //.expect("Failed to discard input buffer")
-    //}
-    //Err(mpsc::TryRecvError::Empty) => (),
-    //Err(mpsc::TryRecvError::Disconnected) => {
-    //println!("Stopping.");
-    //break;
-    //}
-    //}
-
-    //thread::sleep(Duration::from_millis(100));
-    //}
-    //}
-
-    //pub fn flush_output_buffer(&mut self) {
-
-    //let chan_clear_buf = self.input_service();
-    //println!(
-    //"Connected to {} at {} baud",
-    //Self::UART_PORT,
-    //Self::UART_BAUDRATE
-    //);
-
-    //println!("Clearing Output buffer...");
-
-    //let block = vec![0; 128]; // 128 may be wrong so needs to be checkled.
-    ////todo!("We need to check 128 implementation");
-
-    //// This loop writes the block repeatedly, as fast as possible, to try to saturate the
-    //// output buffer. If you don't see much data queued to send, try changing the block size.
-    //loop {
-    //match self.port.write(&block) {
-    //Ok(_) => (),
-    //Err(ref e) if e.kind() == io::ErrorKind::TimedOut => (),
-    //Err(e) => panic!("Error while writing data to the port: {}", e),
-    //};
-
-    //match chan_clear_buf.try_recv() {
-    //Ok(_) => {
-    //println!(
-    //"------------------------- Discarding buffer ------------------------- "
-    //);
-    //self.port.clear(ClearBuffer::Output)
-    //.expect("Failed to discard output buffer")
-    //}
-    //Err(mpsc::TryRecvError::Empty) => (),
-    //Err(mpsc::TryRecvError::Disconnected) => {
-    //println!("Stopping.");
-    //break;
-    //}
-    //}
-
-    //println!(
-    //"Bytes queued to send: {}",
-    //self.port.bytes_to_write().expect("Error calling bytes_to_write")
-    //);
-    //}
-    //}
-
-    fn input_service(&self) -> mpsc::Receiver<()> {
-        let (tx, rx) = mpsc::channel();
-
-        thread::spawn(move || {
-            let mut buffer = [0; 32];
-            loop {
-                // Block awaiting any user input
-                match io::stdin().read(&mut buffer) {
-                    Ok(0) => {
-                        drop(tx); // EOF, drop the channel and stop the thread
-                        break;
-                    }
-                    Ok(_) => tx.send(()).unwrap(), // Signal main to clear the buffer
-                    Err(e) => panic_any(e),
-                }
-            }
-        });
-
-        rx
     }
 }
 

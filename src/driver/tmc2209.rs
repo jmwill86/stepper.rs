@@ -1,20 +1,18 @@
 use crate::connection::{Connection, ConnectionType};
 use crate::stepper::{Direction, Stepper, StepperBuilder};
 use gpio_cdev::{Chip, LineRequestFlags};
-use std::cmp::{max, min};
-use std::thread;
 use std::time::Duration;
 
 pub enum MicrostepRes {
-    ONE = 1,
-    TWO = 2,
-    FOUR = 4,
-    EIGHT = 8,
-    SIXTEEN = 16,
-    THIRTY_TWO = 32,
-    SIXTY_FOUR = 64,
-    ONE_TWO_FIVE = 125,
-    TWO_FIVE_SIX = 256,
+    One = 1,
+    Two = 2,
+    Four = 4,
+    Eight = 8,
+    Sixteen = 16,
+    ThirtyTwo = 32,
+    SixtyFour = 64,
+    OneTwoFive = 125,
+    TwoFiveSix = 256,
 }
 
 pub enum GConfOption {
@@ -85,9 +83,10 @@ impl StepperBuilder for Tmc2209Builder {
             pins: self.pins,
             chip: self.chip.expect("Chip was not found in build process"),
             connection: self.connection,
-            crc_parity: 0,
+            //crc_parity: 0,
             msres: 256, //?
             current_position: 0,
+            steps_to_move: 0,
         };
         stepper.init();
         stepper
@@ -105,8 +104,9 @@ pub struct Tmc2209 {
     pins: (u8, u8, u8), // step, dir, en
     chip: Chip,
     connection: Connection,
-    crc_parity: u8,
+    //crc_parity: u8,
     current_position: u16,
+    steps_to_move: i32,
     msres: u16,
 }
 
@@ -121,47 +121,37 @@ impl Stepper for Tmc2209 {
         }
     }
 
+    /// Calculates the signed int amount of steps that need to be moved and in what direction and passes this to the step function
     fn move_to_position(&mut self, position: i32) {
-        //if(movement_abs_rel is not None):
-        //this_movement_abs_rel = movement_abs_rel
-        //else:
-        //this_movement_abs_rel = self._movement_abs_rel
-
-        //if(this_movement_abs_rel == MovementAbsRel.relative):
-        //self._targetPos = self._currentPos + steps
-        //else:
-        //self._targetPos = steps
-        let target_position = self.current_position as i32 + position;
-
-        //self._stop = False
-        //self._stepInterval = 0
-        //self._speed = 0.0
-        //self._n = 0
-        //self.computeNewSpeed()
-        let mut i = 0;
-
-        while i < 100 {
-            self.step();
-            std::thread::sleep(Duration::from_micros(1000));
-            i = i + 1;
+        //let target_position = self.current_position as i32 + position;
+        self.set_steps_to_move(position);
+        while self.step().is_ok() {
+            std::thread::sleep(Duration::from_micros(500));
         }
-        println!("Stepping ended!");
-        //while (self.run() and not self._stop): #returns false, when target position is reached
-        //pass
-        //return not self._stop
+        println!("Stepping move_to_position ended!");
     }
 
     fn move_steps(&mut self, steps: i32) {
-        let mut i = 0;
-        while i < steps {
-            self.step();
+        self.set_steps_to_move(steps);
+        while self.step().is_ok() {
             std::thread::sleep(Duration::from_micros(500));
-            i = i + 1;
         }
-        println!("Stepping ended!");
+        println!("Stepping move_steps ended!");
     }
 
-    fn step(&mut self) {
+    /// Amount of steps we need to move in total in sigend-int format for direction. This works along with step() to
+    /// ensure all steps are made and so we can calcular remaining steps and the timings inbweteen.
+    fn set_steps_to_move(&mut self, steps: i32) {
+        self.steps_to_move = steps;
+    }
+
+    /// Runs throuhg the amount of steps required and reduces the count as it goes so we can run
+    /// this in sync for multiple motors. Returns Err() when no more steps remain.
+    fn step(&mut self) -> Result<(), &'static str> {
+        if self.steps_to_move == 0 {
+            return Err("No more steps to move");
+        }
+
         let handle = self
             .chip
             .get_line(self.pins.0 as u32)
@@ -173,7 +163,9 @@ impl Stepper for Tmc2209 {
         std::thread::sleep(Duration::from_micros(1));
         handle.set_value(0).unwrap();
         std::thread::sleep(Duration::from_micros(1));
-        println!("Step Made!")
+        println!("Step Made!");
+        self.current_position += 1;
+        Ok(())
     }
 
     fn set_direction(&mut self, direction: Direction) {
@@ -247,11 +239,11 @@ impl Tmc2209 {
     // DRVSTATUS
     const STST: u32 = 1 << 31;
     const STEALTH: u32 = 1 << 30;
-    const CS_ACTUAL: u32 = 31 << 16;
-    const T157: u16 = 1 << 11;
-    const T150: u16 = 1 << 10;
-    const T143: u16 = 1 << 9;
-    const T120: u16 = 1 << 8;
+    //const CS_ACTUAL: u32 = 31 << 16;
+    //const T157: u16 = 1 << 11;
+    //const T150: u16 = 1 << 10;
+    //const T143: u16 = 1 << 9;
+    //const T120: u16 = 1 << 8;
     const OLB: u8 = 1 << 7;
     const OLA: u8 = 1 << 6;
     const S2VSB: u8 = 1 << 5;
@@ -452,9 +444,8 @@ impl Tmc2209 {
         let hold_current_multiplier = 0.5;
         let hold_current_delay = 10;
         let vref = 1.2;
-        let mut cs_irun = 0;
         let rsense = 0.11;
-        let mut vfs = 0.0;
+        let vfs;
 
         if self.get_vsense() > 0 {
             vfs = 0.180 * vref / 2.5;
@@ -586,11 +577,8 @@ impl Tmc2209 {
         } else {
             println!("TMC2209: Info: motor is running on SpreadCycle");
         }
-        let mut cs_actual = drvstatus & Self::CS_ACTUAL;
-        cs_actual = cs_actual >> 16;
 
         let drvstatus = drvstatus as u8;
-        //println!("TMC2209: CS actual: "+str(cs_actual));
 
         if drvstatus & Self::OLB > 0 {
             println!("TMC2209: Warning: Open load detected on phase B");

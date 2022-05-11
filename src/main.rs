@@ -21,7 +21,7 @@ fn main() {
     println!("Disable Spreadcycle");
     tmc.disable_gconf_option(GConfOption::SpreadCycle);
     println!("Microstep resolution");
-    tmc.set_microstepping_resolution(MicrostepRes::TWO);
+    tmc.set_microstepping_resolution(MicrostepRes::Two);
     println!("Disable InternalRSense");
     tmc.disable_gconf_option(GConfOption::InternalRSense);
 
