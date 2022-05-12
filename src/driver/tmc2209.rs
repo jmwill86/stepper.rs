@@ -282,6 +282,34 @@ impl Tmc2209 {
         self.connection.clear_input_output();
     }
 
+    pub fn init_default_settings(&mut self) {
+        println!("Set dir");
+        self.set_direction(Direction::CCW);
+        println!("Enable Vsense");
+        self.enable_chopconf_option(ChopConfOption::Vsense);
+        println!("Set current");
+        self.set_current(300);
+        println!("Enable Iscale");
+        self.enable_gconf_option(GConfOption::IScaleAnalogue);
+        println!("Enable Intpol");
+        self.enable_chopconf_option(ChopConfOption::Intpol);
+        println!("Disable Spreadcycle");
+        self.disable_gconf_option(GConfOption::SpreadCycle);
+        println!("Microstep resolution");
+        self.set_microstepping_resolution(MicrostepRes::Two);
+        println!("Disable InternalRSense");
+        self.disable_gconf_option(GConfOption::InternalRSense);
+
+        //// Read details
+        println!("Read IOIN");
+        self.read_IOIN();
+        self.read_CHOPCONF();
+        self.read_DRVSTATUS();
+        self.read_GCONF();
+
+        self.set_motor_enabled(Motor::Enabled);
+    }
+
     fn reset_gpios(&mut self) {
         self.chip
             .get_line(self.pins.0 as u32)
