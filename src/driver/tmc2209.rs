@@ -126,7 +126,7 @@ impl Stepper for Tmc2209 {
         //let target_position = self.current_position as i32 + position;
         self.set_steps_to_move(position);
         while self.step().is_ok() {
-            std::thread::sleep(Duration::from_micros(500));
+            std::thread::sleep(Duration::from_micros(2000));
         }
         println!("Stepping move_to_position complete!");
     }
@@ -134,7 +134,7 @@ impl Stepper for Tmc2209 {
     fn move_steps(&mut self, steps: i32) {
         self.set_steps_to_move(steps);
         while self.step().is_ok() {
-            std::thread::sleep(Duration::from_micros(500));
+            std::thread::sleep(Duration::from_micros(2000));
         }
         println!("Stepping move_steps completed!");
     }
@@ -152,12 +152,12 @@ impl Stepper for Tmc2209 {
             n if n > 0 => {
                 self.steps_to_move -= 1;
                 self.current_position += 1;
-                self.set_direction(Direction::CW);
+                //self.set_direction(Direction::CW);
             }
             n if n < 0 => {
                 self.steps_to_move += 1;
                 self.current_position -= 1;
-                self.set_direction(Direction::CCW);
+                //self.set_direction(Direction::CCW);
             }
             _ => return Err("No more steps to move"),
         };

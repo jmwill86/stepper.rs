@@ -37,7 +37,7 @@ fn main() {
     tmc.set_motor_enabled(Motor::Enabled);
 
     //tmc.move_to_position(200);
-    tmc.move_steps(200);
+    tmc.move_steps(512);
     //tmc.move_steps(-200);
 
     println!("Complete!");
