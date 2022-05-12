@@ -128,7 +128,7 @@ impl Stepper for Tmc2209 {
         while self.step().is_ok() {
             std::thread::sleep(Duration::from_micros(500));
         }
-        println!("Stepping move_to_position ended!");
+        println!("Stepping move_to_position complete!");
     }
 
     fn move_steps(&mut self, steps: i32) {
@@ -136,7 +136,7 @@ impl Stepper for Tmc2209 {
         while self.step().is_ok() {
             std::thread::sleep(Duration::from_micros(500));
         }
-        println!("Stepping move_steps ended!");
+        println!("Stepping move_steps completed!");
     }
 
     /// Amount of steps we need to move in total in sigend-int format for direction. This works along with step() to
@@ -148,9 +148,19 @@ impl Stepper for Tmc2209 {
     /// Runs throuhg the amount of steps required and reduces the count as it goes so we can run
     /// this in sync for multiple motors. Returns Err() when no more steps remain.
     fn step(&mut self) -> Result<(), &'static str> {
-        if self.steps_to_move == 0 {
-            return Err("No more steps to move");
-        }
+        match self.steps_to_move {
+            n if n > 0 => {
+                self.steps_to_move -= 1;
+                self.current_position += 1;
+                self.set_direction(Direction::CW);
+            }
+            n if n < 0 => {
+                self.steps_to_move += 1;
+                self.current_position -= 1;
+                self.set_direction(Direction::CCW);
+            }
+            _ => return Err("No more steps to move"),
+        };
 
         let handle = self
             .chip
@@ -164,7 +174,6 @@ impl Stepper for Tmc2209 {
         handle.set_value(0).unwrap();
         std::thread::sleep(Duration::from_micros(1));
         println!("Step Made!");
-        self.current_position += 1;
         Ok(())
     }
 
@@ -693,9 +702,10 @@ mod tests {
             pins: (1, 1, 1), // step, dir, en
             chip: mockchip,
             connection: Connection::new(ConnectionType::UART),
-            crc_parity: 0,
+            //crc_parity: 0,
             current_position: 0,
             msres: 0,
+            steps_to_move: 0,
         }
     }
 
