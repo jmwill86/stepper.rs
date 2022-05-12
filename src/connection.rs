@@ -16,7 +16,8 @@ impl Connection {
     //const UART_PORT: &'static str = "/dev/ttyAMA0";
     const UART_PORT: &'static str = "/dev/ttyS0";
     const UART_BAUDRATE: u32 = 9600;
-    const CALLING_PAUSE: u64 = 100000;
+    const CALLING_PAUSE: Duration =
+        Duration::from_millis((500 / Self::UART_BAUDRATE * 1000) as u64);
 
     pub fn new(connection: ConnectionType) -> Self {
         let ports = serialport::available_ports().expect("No ports found!");
@@ -55,12 +56,15 @@ impl Connection {
                         println!("Error");
                         return Err("Missmatch in receive/response counts for reading.");
                     }
-                    std::thread::sleep(Duration::from_micros(Self::CALLING_PAUSE));
+                    std::thread::sleep(Self::CALLING_PAUSE);
                     let mut buffer: Vec<u8> = vec![0; 12];
-                    self.port.read(buffer.as_mut_slice()).expect("Read not successful on port");
+                    self.port
+                        .read(buffer.as_mut_slice())
+                        .expect("Read not successful on port");
+
                     println!("Full reply...{:?}", buffer);
                     let return_read = buffer[7..11].try_into().unwrap();
-                    //std::thread::sleep(Duration::from_micros(Self::CALLING_PAUSE));
+                    std::thread::sleep(Self::CALLING_PAUSE);
                     println!("--- Read Reg reply: {:?}", return_read);
                     return Ok(return_read);
                 }
@@ -80,7 +84,7 @@ impl Connection {
 
         self.clear_input_output();
         let write_result = self.port.write(write_data.as_mut_slice());
-        //std::thread::sleep(Duration::from_micros(Self::CALLING_PAUSE));
+        std::thread::sleep(Self::CALLING_PAUSE);
 
         match write_result {
             Ok(result) => {

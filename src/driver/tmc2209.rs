@@ -85,6 +85,7 @@ impl StepperBuilder for Tmc2209Builder {
             connection: self.connection,
             //crc_parity: 0,
             msres: 256, //?
+            current_direction: Direction::CW,
             current_position: 0,
             steps_to_move: 0,
         };
@@ -106,6 +107,7 @@ pub struct Tmc2209 {
     connection: Connection,
     //crc_parity: u8,
     current_position: u16,
+    current_direction: Direction,
     steps_to_move: i32,
     msres: u16,
 }
@@ -152,12 +154,12 @@ impl Stepper for Tmc2209 {
             n if n > 0 => {
                 self.steps_to_move -= 1;
                 self.current_position += 1;
-                //self.set_direction(Direction::CW);
+                self.set_direction(Direction::CW);
             }
             n if n < 0 => {
                 self.steps_to_move += 1;
                 self.current_position -= 1;
-                //self.set_direction(Direction::CCW);
+                self.set_direction(Direction::CCW);
             }
             _ => return Err("No more steps to move"),
         };
@@ -178,20 +180,26 @@ impl Stepper for Tmc2209 {
     }
 
     fn set_direction(&mut self, direction: Direction) {
-        let reg = 1 << 3;
-        let mut gconf = self.read_int(self.get_read_bytes(Self::GCONF));
+        if direction != self.current_direction {
+            let reg = 1 << 3;
+            let mut gconf = self.read_int(self.get_read_bytes(Self::GCONF));
 
-        match direction {
-            Direction::CW => {
-                gconf = Self::clear_bit(gconf, reg);
-            }
-            Direction::CCW => {
-                gconf = Self::set_bit(gconf, reg);
-            }
-        };
+            match direction {
+                Direction::CW => {
+                    gconf = Self::clear_bit(gconf, reg);
+                }
+                Direction::CCW => {
+                    gconf = Self::set_bit(gconf, reg);
+                }
+            };
 
-        self.write_check(self.get_write_bytes(Self::GCONF, gconf))
-            .unwrap();
+            self.write_check(self.get_write_bytes(Self::GCONF, gconf))
+                .unwrap();
+
+            self.current_direction = direction;
+        } else {
+            println!("Direction was already set to the requested option");
+        }
     }
 }
 

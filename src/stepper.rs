@@ -2,6 +2,7 @@ use crate::connection::ConnectionType;
 use gpio_cdev::Chip;
 
 /// Direction of the stepper CW = Clockwise / CCW = Counter clockwise
+#[derive(PartialEq)]
 pub enum Direction {
     CW,
     CCW,
