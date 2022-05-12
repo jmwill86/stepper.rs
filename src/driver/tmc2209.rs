@@ -686,17 +686,6 @@ mod tests {
     use std::sync::Arc;
 
     fn get_mock_tmc() -> Tmc2209 {
-        //let mockpath = Path::new(".");
-        //let mockchip = gpio_cdev::Chip {
-        //inner: Arc::new(gpio_cdev::InnerChip {
-        //file: File::open(mockpath.as_ref()).unwrap(),
-        //path: mockpath.as_ref().to_path_buf(),
-        //name: "test".to_owned(),
-        //label: "test".to_owned(),
-        //lines: 1,
-        //}),
-        //};
-
         let mockchip = Chip::new("/dev/gpiochip0").unwrap();
         Tmc2209 {
             pins: (1, 1, 1), // step, dir, en
