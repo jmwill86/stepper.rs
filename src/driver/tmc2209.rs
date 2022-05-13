@@ -79,7 +79,7 @@ impl StepperBuilder for Tmc2209Builder {
             }
         }
 
-        let mut stepper = Tmc2209 {
+        let stepper = Tmc2209 {
             pins: self.pins,
             chip: self.chip.expect("Chip was not found in build process"),
             connection: self.connection,
@@ -89,7 +89,6 @@ impl StepperBuilder for Tmc2209Builder {
             current_position: 0,
             steps_to_move: 0,
         };
-        stepper.init();
         stepper
     }
 }
@@ -282,43 +281,17 @@ impl Tmc2209 {
         &self.connection
     }
 
-    fn init(&mut self) {
-        println!("init!");
-        self.reset_gpios();
-        self.read_steps_per_revolution();
-        self.clear_gstat();
-        self.connection.clear_input_output();
-    }
+    //fn clear(&mut self) {
+    //println!("init!");
+    //self.reset_gpios();
+    ////self.read_steps_per_revolution(); // Not currenty used
+    //self.clear_gstat();
+    //self.connection.clear_input_output();
+    //}
 
-    pub fn init_default_settings(&mut self) {
-        println!("Set dir");
-        self.set_direction(Direction::CCW);
-        println!("Enable Vsense");
-        self.enable_chopconf_option(ChopConfOption::Vsense);
-        println!("Set current");
-        self.set_current(300);
-        println!("Enable Iscale");
-        self.enable_gconf_option(GConfOption::IScaleAnalogue);
-        println!("Enable Intpol");
-        self.enable_chopconf_option(ChopConfOption::Intpol);
-        println!("Disable Spreadcycle");
-        self.disable_gconf_option(GConfOption::SpreadCycle);
-        println!("Microstep resolution");
-        self.set_microstepping_resolution(MicrostepRes::Two);
-        println!("Disable InternalRSense");
-        self.disable_gconf_option(GConfOption::InternalRSense);
+    pub fn init_default_settings(&mut self) {}
 
-        //// Read details
-        println!("Read IOIN");
-        self.read_IOIN();
-        self.read_CHOPCONF();
-        self.read_DRVSTATUS();
-        self.read_GCONF();
-
-        self.set_motor_enabled(Motor::Enabled);
-    }
-
-    fn reset_gpios(&mut self) {
+    pub fn reset_gpios(&mut self) {
         self.chip
             .get_line(self.pins.0 as u32)
             .unwrap()
@@ -345,7 +318,7 @@ impl Tmc2209 {
         reply
     }
 
-    fn clear_gstat(&mut self) {
+    pub fn clear_gstat(&mut self) {
         println!("Clear GSTAT");
         let mut gstat: u32 = self.read_int(self.get_read_bytes(Self::GSTAT));
         //check here for 4 bytes being returned otherwise something went wrong and we should retry?
