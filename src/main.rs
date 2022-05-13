@@ -38,7 +38,7 @@ fn main() {
 
     //tmc.move_to_position(200);
     tmc.move_steps(512);
-    //tmc.move_steps(-200);
+    tmc.move_steps(-512);
 
     println!("Complete!");
 }
