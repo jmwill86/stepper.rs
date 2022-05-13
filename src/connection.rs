@@ -17,7 +17,8 @@ impl Connection {
     const UART_PORT: &'static str = "/dev/ttyS0";
     const UART_BAUDRATE: u32 = 9600;
     const CALLING_PAUSE: Duration =
-        Duration::from_millis((500 / Self::UART_BAUDRATE * 1000) as u64);
+        Duration::from_millis((14) as u64);
+        //Duration::from_millis((500 / Self::UART_BAUDRATE * 100) as u64);
 
     pub fn new(connection: ConnectionType) -> Self {
         let ports = serialport::available_ports().expect("No ports found!");
