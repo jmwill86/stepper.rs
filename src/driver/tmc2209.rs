@@ -105,7 +105,7 @@ pub struct Tmc2209 {
     chip: Chip,
     connection: Connection,
     //crc_parity: u8,
-    current_position: u16,
+    current_position: i16,
     current_direction: Direction,
     steps_to_move: i32,
     msres: u16,
