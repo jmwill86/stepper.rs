@@ -1,5 +1,4 @@
-use crate::connection::{Connection, ConnectionType};
-use gpio_cdev::Chip;
+use crate::connection::Connection;
 
 /// Direction of the stepper CW = Clockwise / CCW = Counter clockwise
 #[derive(PartialEq)]
@@ -10,14 +9,14 @@ pub enum Direction {
 
 /// Builder trait for any steppers to ensure no matter what type of stepper is being used that we
 /// always have the correct interface
-pub trait StepperBuilder {
-    type Builder: StepperBuilder;
-    type Stepper;
+//pub trait StepperBuilder {
+//type Builder: StepperBuilder;
+//type Stepper;
 
-    fn build(self) -> Self::Stepper;
-    fn set_connection(self, connection: ConnectionType) -> Self::Builder;
-    fn set_chip(self, chip: Option<Chip>) -> Self::Builder;
-}
+//fn build(self) -> Self::Stepper;
+//fn set_connection(self, connection: ConnectionType) -> Self::Builder;
+//fn set_chip(self, chip: Option<Chip>) -> Self::Builder;
+//}
 
 pub trait Stepper {
     //type Builder: StepperBuilder;

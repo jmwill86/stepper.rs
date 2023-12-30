@@ -1,26 +1,27 @@
+use gpio_cdev::{Chip, LineRequestFlags};
 use serialport::{ClearBuffer, DataBits, Parity, SerialPort, StopBits};
 use std::io::Read;
 use std::time::Duration;
 
-pub enum ConnectionType {
-    UART,
-    SPI,
-}
+//pub enum ConnectionType {
+    //UART,
+    //SPI,
+//}
 
 pub struct Connection {
-    connection: ConnectionType,
+    //connection: ConnectionType,
     port: Box<dyn SerialPort>,
+    chip: Chip
 }
 
 impl Connection {
     //const UART_PORT: &'static str = "/dev/ttyAMA0";
     const UART_PORT: &'static str = "/dev/ttyS0";
     const UART_BAUDRATE: u32 = 9600;
-    const CALLING_PAUSE: Duration =
-        Duration::from_millis((14) as u64);
-        //Duration::from_millis((500 / Self::UART_BAUDRATE * 100) as u64);
+    const CALLING_PAUSE: Duration = Duration::from_millis((14) as u64);
+    // Duration::from_millis((500 / Self::UART_BAUDRATE * 100) as u64);
 
-    pub fn new(connection: ConnectionType) -> Self {
+    pub fn new() -> Self {
         let ports = serialport::available_ports().expect("No ports found!");
         println!("Available ports:");
         for p in ports {
@@ -28,16 +29,27 @@ impl Connection {
         }
 
         Self {
-            connection,
             port: Self::get_port(),
+            chip: Chip::new("/dev/gpiochip0").ok().unwrap(),
         }
     }
 
-    pub fn pin_up(&self, pin: u32) {
+    pub fn pin_up(&mut self, pin: u32) {
         println!("{:?}", pin);
+
+        //chip: Chip::new("/dev/gpiochip0").ok(),
+
+        let handle = self
+        .chip
+        .get_line(pin)
+        .unwrap()
+        .request(LineRequestFlags::OUTPUT, 0, "step_request")
+        .unwrap();
+        
+        handle.set_value(1).unwrap();
     }
 
-    pub fn pin_down(&self, pin: u32) {
+    pub fn pin_down(&mut self, pin: u32) {
         println!("{:?}", pin);
     }
 

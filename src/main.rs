@@ -1,3 +1,4 @@
+use stepper_rs::connection::Connection;
 use stepper_rs::driver::tmc2209::Tmc2209;
 use stepper_rs::driver::tmc2209::{ChopConfOption, GConfOption, MicrostepRes, Motor};
 use stepper_rs::stepper::Direction;
@@ -5,8 +6,8 @@ use stepper_rs::stepper::Stepper;
 
 fn main() {
     println!("Running main...");
-
-    let mut tmc = Tmc2209::new((13, 19, 26)); // .build(); // step, dir, en
+    let connection = Connection::new();
+    let mut tmc = Tmc2209::new((13, 19, 26), connection); // .build(); // step, dir, en
     println!("Set dir");
     tmc.set_direction(Direction::CCW);
     println!("Enable Vsense");
