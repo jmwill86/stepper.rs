@@ -33,6 +33,14 @@ impl Connection {
         }
     }
 
+    pub fn pin_up(&self, pin: u32) {
+        println!("{:?}", pin);
+    }
+
+    pub fn pin_down(&self, pin: u32) {
+        println!("{:?}", pin);
+    }
+
     fn get_port() -> Box<dyn SerialPort> {
         serialport::new(Self::UART_PORT, Self::UART_BAUDRATE)
             .timeout(Duration::from_secs((20000 / Self::UART_BAUDRATE).into()))

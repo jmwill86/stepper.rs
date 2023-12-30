@@ -1,4 +1,4 @@
-use crate::connection::ConnectionType;
+use crate::connection::{Connection, ConnectionType};
 use gpio_cdev::Chip;
 
 /// Direction of the stepper CW = Clockwise / CCW = Counter clockwise
@@ -20,9 +20,9 @@ pub trait StepperBuilder {
 }
 
 pub trait Stepper {
-    type Builder: StepperBuilder;
+    //type Builder: StepperBuilder;
 
-    fn new(pins: (u8, u8, u8)) -> Self::Builder;
+    fn new(pins: (u8, u8, u8), connection: Connection) -> Self;
     fn move_to_position(&mut self, position: i32);
     fn move_steps(&mut self, steps: i32);
     fn set_steps_to_move(&mut self, steps: i32);

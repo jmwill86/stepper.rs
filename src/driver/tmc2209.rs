@@ -1,6 +1,5 @@
-use crate::connection::{Connection, ConnectionType};
-use crate::stepper::{Direction, Stepper, StepperBuilder};
-use gpio_cdev::{Chip, LineRequestFlags};
+use crate::connection::Connection;
+use crate::stepper::{Direction, Stepper};
 use std::time::Duration;
 
 pub enum MicrostepRes {
@@ -33,93 +32,100 @@ pub enum Motor {
     Disabled,
 }
 
-pub struct Tmc2209Builder {
-    pins: (u8, u8, u8), // step, dir, en
-    chip: Option<Chip>,
-    connection: Connection,
-}
+//pub struct Tmc2209Builder {
+//pins: (u8, u8, u8), // step, dir, en
+//chip: Option<Chip>,
+//connection: Connection,
+//}
 
-impl StepperBuilder for Tmc2209Builder {
-    type Builder = Tmc2209Builder;
-    type Stepper = Tmc2209;
+//impl StepperBuilder for Tmc2209Builder {
+//type Builder = Tmc2209Builder;
+//type Stepper = Tmc2209;
 
-    fn set_connection(mut self, connection: ConnectionType) -> Self::Builder {
-        self.connection = Connection::new(connection);
-        self
-    }
+//fn set_connection(mut self, connection: ConnectionType) -> Self::Builder {
+//self.connection = Connection::new(connection);
+//self
+//}
 
-    /// Should be supplied with Chip::new().ok() to transform the Chip result to Option
-    fn set_chip(mut self, chip: Option<Chip>) -> Self::Builder {
-        self.chip = chip;
-        self
-    }
+///// Should be supplied with Chip::new().ok() to transform the Chip result to Option
+//fn set_chip(mut self, chip: Option<Chip>) -> Self::Builder {
+//self.chip = chip;
+//self
+//}
 
-    fn build(self) -> Self::Stepper {
-        match self.chip {
-            Some(_) => println!("Chip found!"),
-            None => {
-                let iterator = gpio_cdev::chips().expect("No chips found");
-                let mut counter = 0;
-                for chip1 in iterator {
-                    counter = counter + 1;
-                    println!(
-                        "Available chip {}: {}",
-                        counter,
-                        chip1
-                            .expect("Chips iter not found")
-                            .path()
-                            .to_str()
-                            .unwrap()
-                    );
-                }
-                panic!(
-                    "Loading Chip failed. There are {} chips available.",
-                    counter
-                );
-            }
-        }
+//fn build(self) -> Self::Stepper {
+//match self.chip {
+//Some(_) => println!("Chip found!"),
+//None => {
+//let iterator = gpio_cdev::chips().expect("No chips found");
+//let mut counter = 0;
+//for chip1 in iterator {
+//counter = counter + 1;
+//println!(
+//"Available chip {}: {}",
+//counter,
+//chip1
+//.expect("Chips iter not found")
+//.path()
+//.to_str()
+//.unwrap()
+//);
+//}
+//panic!(
+//"Loading Chip failed. There are {} chips available.",
+//counter
+//);
+//}
+//}
 
-        let stepper = Tmc2209 {
-            pins: self.pins,
-            chip: self.chip.expect("Chip was not found in build process"),
-            connection: self.connection,
-            //crc_parity: 0,
-            msres: 256, //?
-            current_direction: Direction::CW,
-            current_position: 0,
-            steps_to_move: 0,
-        };
-        stepper
-    }
-}
+//Tmc2209 {
+//pins: self.pins,
+//chip: self.chip.expect("Chip was not found in build process"),
+//connection: self.connection,
+////crc_parity: 0,
+//msres: 256, //?
+//current_direction: Direction::CW,
+//current_position: 0,
+//steps_to_move: 0,
+//}
+//}
+//}
 
-impl Tmc2209Builder {
-    //pub fn set_connection(mut self, connection: ConnectionType) -> Self {
-    //self.connection = connection;
-    //self
-    //}
-}
+//impl Tmc2209Builder {
+////pub fn set_connection(mut self, connection: ConnectionType) -> Self {
+////self.connection = connection;
+////self
+////}
+//}
 
 pub struct Tmc2209 {
     pins: (u8, u8, u8), // step, dir, en
-    chip: Chip,
+    //chip: Chip,
     connection: Connection,
     //crc_parity: u8,
     current_position: i16,
     current_direction: Direction,
     steps_to_move: i32,
-    msres: u16,
+    //msres: u16,
 }
 
 impl Stepper for Tmc2209 {
-    type Builder = Tmc2209Builder;
+    //type Builder = Tmc2209Builder;
 
-    fn new(pins: (u8, u8, u8)) -> Self::Builder {
-        Self::Builder {
+    fn new(pins: (u8, u8, u8), connection: Connection) -> Self {
+        Self {
             pins,
-            chip: Chip::new("/dev/gpiochip0").ok(),
-            connection: Connection::new(ConnectionType::UART),
+            connection,
+            current_position: 0,
+            current_direction: Direction::CW,
+            steps_to_move: 0,
+            //msres: 0,
         }
+        //Self::Builder {
+        //pins,
+        //chip: Chip::new("/dev/gpiochip0").ok(),
+        //connection: Connection::new(ConnectionType::UART),
+        //}
     }
 
     /// Calculates the signed int amount of steps that need to be moved and in what direction and passes this to the step function
@@ -163,16 +169,18 @@ impl Stepper for Tmc2209 {
             _ => return Err("No more steps to move"),
         };
 
-        let handle = self
-            .chip
-            .get_line(self.pins.0 as u32)
-            .unwrap()
-            .request(LineRequestFlags::OUTPUT, 0, "step_request")
-            .unwrap();
+        //let handle = self
+        //.chip
+        //.get_line(self.pins.0 as u32)
+        //.unwrap()
+        //.request(LineRequestFlags::OUTPUT, 0, "step_request")
+        //.unwrap();
 
-        handle.set_value(1).unwrap();
+        self.connection.pin_up(self.pins.0 as u32);
+        //handle.set_value(1).unwrap();
         std::thread::sleep(Duration::from_micros(1));
-        handle.set_value(0).unwrap();
+        self.connection.pin_down(self.pins.0 as u32);
+        //handle.set_value(0).unwrap();
         std::thread::sleep(Duration::from_micros(1));
         println!("Step Made!");
         Ok(())
@@ -292,23 +300,27 @@ impl Tmc2209 {
     pub fn init_default_settings(&mut self) {}
 
     pub fn reset_gpios(&mut self) {
-        self.chip
-            .get_line(self.pins.0 as u32)
-            .unwrap()
-            .request(LineRequestFlags::OUTPUT, 0, "output_pin_step")
-            .expect("En pin could not be set as output");
+        self.connection.pin_down(self.pins.0 as u32);
+        self.connection.pin_down(self.pins.1 as u32);
+        self.connection.pin_down(self.pins.2 as u32);
 
-        self.chip
-            .get_line(self.pins.1 as u32)
-            .unwrap()
-            .request(LineRequestFlags::OUTPUT, 0, "output_pin_dir")
-            .expect("En pin could not be set as output");
+        //self.chip
+        //.get_line(self.pins.0 as u32)
+        //.unwrap()
+        //.request(LineRequestFlags::OUTPUT, 0, "output_pin_step")
+        //.expect("En pin could not be set as output");
 
-        self.chip
-            .get_line(self.pins.2 as u32)
-            .unwrap()
-            .request(LineRequestFlags::OUTPUT, 0, "output_pin_en")
-            .expect("En pin could not be set as output");
+        //self.chip
+        //.get_line(self.pins.1 as u32)
+        //.unwrap()
+        //.request(LineRequestFlags::OUTPUT, 0, "output_pin_dir")
+        //.expect("En pin could not be set as output");
+
+        //self.chip
+        //.get_line(self.pins.2 as u32)
+        //.unwrap()
+        //.request(LineRequestFlags::OUTPUT, 0, "output_pin_en")
+        //.expect("En pin could not be set as output");
     }
 
     fn read_int(&mut self, reg: Vec<u8>) -> u32 {
@@ -356,8 +368,7 @@ impl Tmc2209 {
             chopconf & (Self::MSRES0 | Self::MSRES1 | Self::MSRES2 | Self::MSRES3);
         msresdezimal = msresdezimal >> 24;
         msresdezimal = 8 - msresdezimal;
-        self.msres = 2_u32.pow(msresdezimal) as u16;
-        self.msres
+        2_u32.pow(msresdezimal) as u16
     }
 
     /// Calculates CRC parity bit
@@ -505,19 +516,22 @@ impl Tmc2209 {
     }
 
     pub fn set_motor_enabled(&mut self, enabled: Motor) {
-        let handle = self
-            .chip
-            .get_line(self.pins.2 as u32)
-            .unwrap()
-            .request(LineRequestFlags::OUTPUT, 1, "motor_enabled")
-            .unwrap();
+        //self.connection.pin_up(self.pins.2)
+        //let handle = self
+        //.chip
+        //.get_line(self.pins.2 as u32)
+        //.unwrap()
+        //.request(LineRequestFlags::OUTPUT, 1, "motor_enabled")
+        //.unwrap();
 
         match enabled {
             Motor::Enabled => {
-                handle.set_value(0).unwrap();
+                self.connection.pin_down(self.pins.2 as u32)
+                //handle.set_value(0).unwrap();
             }
             Motor::Disabled => {
-                handle.set_value(1).unwrap();
+                self.connection.pin_up(self.pins.2 as u32)
+                //handle.set_value(1).unwrap();
             }
         }
     }
