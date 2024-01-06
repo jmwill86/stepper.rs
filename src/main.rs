@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use stepper_rs::connection::Connection;
 use stepper_rs::driver::tmc2209::Tmc2209;
 use stepper_rs::driver::tmc2209::{ChopConfOption, GConfOption, MicrostepRes, Motor};
@@ -7,7 +9,9 @@ use stepper_rs::stepper::Stepper;
 fn main() {
     println!("Running main...");
     let connection = Connection::new();
+    //let connection2 = Connection::new();
     let mut tmc = Tmc2209::new((13, 19, 26), connection); // .build(); // step, dir, en
+    //let tmc2 = Tmc2209::new((13, 19, 26), connection2); // .build(); // step, dir, en
     println!("Set dir");
     tmc.set_direction(Direction::CCW);
     println!("Enable Vsense");
@@ -46,7 +50,7 @@ fn main() {
     // Motion controller so we can controll the activation of which steper we're using inbetween
     // steps and swithc where needed
     let mut motion_controller = MotionController::new(tmc);
-    //let motion_controller2 = MotionController::new(tmc2);
+    //let mut motion_controller2 = MotionController::new(tmc2);
 
     motion_controller.move_steps(50);
     motion_controller.move_steps(-50);
@@ -55,29 +59,34 @@ fn main() {
     //motion_controller2.move_steps(-50);
     
 
-
-
-
-
     println!("Complete!");
 }
 
-
 struct MotionController {
-    is_activated: bool
-
+    stepper_motor: Tmc2209 // @TODO - make this generic
 }
 
 impl MotionController {
-    pub fn new(_stepper: impl Stepper) -> Self {
+    pub fn new(stepper: Tmc2209) -> Self {
         Self {
-            is_activated: false
+            stepper_motor: stepper
         }
     }
 
-    pub fn move_steps(&mut self, _steps: i32)
+    pub async fn move_steps(&mut self, steps: i32)
     {
-        self.is_activated = true;
-    }
+        // Activate the connection, 
+        // Step the motor
 
+        // -----
+
+        //self.set_steps_to_move(steps);
+
+        //while self.stepper_motor.step().is_ok() {
+            //println!("Moving step");
+            //std::thread::sleep(Duration::from_micros(2000));
+        //}
+
+        //println!("Stepping move_steps completed!");
+    }
 }
