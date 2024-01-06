@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 serialport = "4.1.0"
 gpio-cdev = "0.5.1"
+ramp-maker = "0.2.0"
 #libudev = "0.3.0"
 
 [dev-dependencies]

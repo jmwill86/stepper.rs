@@ -32,86 +32,15 @@ pub enum Motor {
     Disabled,
 }
 
-//pub struct Tmc2209Builder {
-//pins: (u8, u8, u8), // step, dir, en
-//chip: Option<Chip>,
-//connection: Connection,
-//}
-
-//impl StepperBuilder for Tmc2209Builder {
-//type Builder = Tmc2209Builder;
-//type Stepper = Tmc2209;
-
-//fn set_connection(mut self, connection: ConnectionType) -> Self::Builder {
-//self.connection = Connection::new(connection);
-//self
-//}
-
-///// Should be supplied with Chip::new().ok() to transform the Chip result to Option
-//fn set_chip(mut self, chip: Option<Chip>) -> Self::Builder {
-//self.chip = chip;
-//self
-//}
-
-//fn build(self) -> Self::Stepper {
-//match self.chip {
-//Some(_) => println!("Chip found!"),
-//None => {
-//let iterator = gpio_cdev::chips().expect("No chips found");
-//let mut counter = 0;
-//for chip1 in iterator {
-//counter = counter + 1;
-//println!(
-//"Available chip {}: {}",
-//counter,
-//chip1
-//.expect("Chips iter not found")
-//.path()
-//.to_str()
-//.unwrap()
-//);
-//}
-//panic!(
-//"Loading Chip failed. There are {} chips available.",
-//counter
-//);
-//}
-//}
-
-//Tmc2209 {
-//pins: self.pins,
-//chip: self.chip.expect("Chip was not found in build process"),
-//connection: self.connection,
-////crc_parity: 0,
-//msres: 256, //?
-//current_direction: Direction::CW,
-//current_position: 0,
-//steps_to_move: 0,
-//}
-//}
-//}
-
-//impl Tmc2209Builder {
-////pub fn set_connection(mut self, connection: ConnectionType) -> Self {
-////self.connection = connection;
-////self
-////}
-//}
-
 pub struct Tmc2209 {
     pins: (u8, u8, u8), // step, dir, en
-    //chip: Chip,
     connection: Connection,
-    //crc_parity: u8,
     current_position: i16,
     current_direction: Direction,
     steps_to_move: i32,
-    //msres: u16,
 }
 
 impl Stepper for Tmc2209 {
-    //type Builder = Tmc2209Builder;
-
     fn new(pins: (u8, u8, u8), connection: Connection) -> Self {
         Self {
             pins,
@@ -140,9 +69,12 @@ impl Stepper for Tmc2209 {
 
     fn move_steps(&mut self, steps: i32) {
         self.set_steps_to_move(steps);
+
         while self.step().is_ok() {
+            println!("Moving step");
             std::thread::sleep(Duration::from_micros(2000));
         }
+
         println!("Stepping move_steps completed!");
     }
 
@@ -168,13 +100,6 @@ impl Stepper for Tmc2209 {
             }
             _ => return Err("No more steps to move"),
         };
-
-        //let handle = self
-        //.chip
-        //.get_line(self.pins.0 as u32)
-        //.unwrap()
-        //.request(LineRequestFlags::OUTPUT, 0, "step_request")
-        //.unwrap();
 
         self.connection.pin_up(self.pins.0 as u32);
         //handle.set_value(1).unwrap();
@@ -704,19 +629,14 @@ impl Tmc2209 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::File;
-    use std::path::Path;
-    use std::sync::Arc;
 
     fn get_mock_tmc() -> Tmc2209 {
-        let mockchip = Chip::new("/dev/gpiochip0").unwrap();
+        let connection = Connection::new();
         Tmc2209 {
             pins: (1, 1, 1), // step, dir, en
-            chip: mockchip,
-            connection: Connection::new(ConnectionType::UART),
-            //crc_parity: 0,
+            connection,
             current_position: 0,
-            msres: 0,
+            current_direction: Direction::CW,
             steps_to_move: 0,
         }
     }
