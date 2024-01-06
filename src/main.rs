@@ -37,15 +37,15 @@ fn main() {
     tmc.set_motor_enabled(Motor::Enabled);
 
     //tmc.move_to_position(200);
-    tmc.move_steps(50);
-    tmc.move_steps(-50);
+    //tmc.move_steps(50);
+    //tmc.move_steps(-50);
 
 
     // New way
     
     // Motion controller so we can controll the activation of which steper we're using inbetween
     // steps and swithc where needed
-    let motion_controller = MotionController::new(tmc);
+    let mut motion_controller = MotionController::new(tmc);
     //let motion_controller2 = MotionController::new(tmc2);
 
     motion_controller.move_steps(50);
@@ -73,7 +73,6 @@ impl MotionController {
         Self {
             is_activated: false
         }
-
     }
 
     pub fn move_steps(&mut self, _steps: i32)

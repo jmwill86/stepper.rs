@@ -57,32 +57,32 @@ impl Stepper for Tmc2209 {
         //}
     }
 
-    /// Calculates the signed int amount of steps that need to be moved and in what direction and passes this to the step function
-    fn move_to_position(&mut self, position: i32) {
-        //let target_position = self.current_position as i32 + position;
-        self.set_steps_to_move(position);
-        while self.step().is_ok() {
-            std::thread::sleep(Duration::from_micros(2000));
-        }
-        println!("Stepping move_to_position complete!");
-    }
+    ///// Calculates the signed int amount of steps that need to be moved and in what direction and passes this to the step function
+    //fn move_to_position(&mut self, position: i32) {
+    ////let target_position = self.current_position as i32 + position;
+    //self.set_steps_to_move(position);
+    //while self.step().is_ok() {
+    //std::thread::sleep(Duration::from_micros(2000));
+    //}
+    //println!("Stepping move_to_position complete!");
+    //}
 
-    fn move_steps(&mut self, steps: i32) {
-        self.set_steps_to_move(steps);
+    //fn move_steps(&mut self, steps: i32) {
+    //self.set_steps_to_move(steps);
 
-        while self.step().is_ok() {
-            println!("Moving step");
-            std::thread::sleep(Duration::from_micros(2000));
-        }
+    //while self.step().is_ok() {
+    //println!("Moving step");
+    //std::thread::sleep(Duration::from_micros(2000));
+    //}
 
-        println!("Stepping move_steps completed!");
-    }
+    //println!("Stepping move_steps completed!");
+    //}
 
     /// Amount of steps we need to move in total in sigend-int format for direction. This works along with step() to
     /// ensure all steps are made and so we can calcular remaining steps and the timings inbweteen.
-    fn set_steps_to_move(&mut self, steps: i32) {
-        self.steps_to_move = steps;
-    }
+    //fn set_steps_to_move(&mut self, steps: i32) {
+    //self.steps_to_move = steps;
+    //}
 
     /// Runs throuhg the amount of steps required and reduces the count as it goes so we can run
     /// this in sync for multiple motors. Returns Err() when no more steps remain.
