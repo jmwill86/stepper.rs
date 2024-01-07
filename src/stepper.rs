@@ -1,4 +1,5 @@
 use crate::connection::Connection;
+use mockall::automock;
 
 /// Direction of the stepper CW = Clockwise / CCW = Counter clockwise
 #[derive(PartialEq)]
@@ -7,6 +8,7 @@ pub enum Direction {
     CCW,
 }
 
+#[automock]
 pub trait Stepper {
     fn new(pins: (u8, u8, u8), connection: Connection) -> Self;
     //fn move_to_position(&mut self, position: i32);

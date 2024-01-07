@@ -716,15 +716,15 @@ mod tests {
         )
     }
 
-    #[test]
-    fn get_drv_status_vec() {
-        //let the_tmc = Tmc2209::new(1, 2, 3);
+    //#[test]
+    //fn get_drv_status_vec() {
+        ////let the_tmc = Tmc2209::new(1, 2, 3);
 
-        //assert_eq!(
-        //the_tmc.get_read_bytes(Tmc2209::GCONF as u32, Tmc2209::EN_SPREADCYCLE as u32),
-        //vec![0x01; 4]
-        //)
-    }
+        ////assert_eq!(
+        ////the_tmc.get_read_bytes(Tmc2209::GCONF as u32, Tmc2209::EN_SPREADCYCLE as u32),
+        ////vec![0x01; 4]
+        ////)
+    //}
 
     #[test]
     fn get_steps_per_rev() {
