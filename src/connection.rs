@@ -1,4 +1,5 @@
 use gpio_cdev::{Chip, LineRequestFlags};
+use mockall::automock;
 use serialport::{ClearBuffer, DataBits, Parity, SerialPort, StopBits};
 use std::io::Read;
 use std::time::Duration;
@@ -8,6 +9,7 @@ use std::time::Duration;
     //SPI,
 //}
 
+#[automock]
 pub struct Connection {
     //connection: ConnectionType,
     port: Box<dyn SerialPort>,

@@ -1,6 +1,7 @@
 use crate::connection::Connection;
 use crate::stepper::{Direction, Stepper};
 use std::time::Duration;
+use mockall::automock;
 
 pub enum MicrostepRes {
     One = 1,
